@@ -1,0 +1,37 @@
+{
+  "name": "iipzy-shared",
+  "version": "1.0.0",
+  "author": "Ken Robesky",
+  "license": "ISC",
+  "description": "iipzy shared source",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "async-mutex": "^0.1.4",
+    "axios": "^0.18.0",
+    "form-data": "^2.5.1",
+    "node-schedule": "^1.3.2",
+    "proper-lockfile": "^4.1.1",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "react-hot-loader": "^4.8.5",
+    "tar": "^4.4.13",
+    "winston": "^3.2.1",
+    "winston-daily-rotate-file": "^3.8.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.4.3",
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
+    "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babel-plugin-transform-es2015-classes": "^6.24.1",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-react": "^6.24.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://192.168.12.141/Bonobo.Git.Server/iipzy-shared.git"
+  }
+}
