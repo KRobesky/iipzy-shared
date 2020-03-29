@@ -193,6 +193,7 @@ module.exports = {
   statusSentinelInUse: 10027,
   statusAdminInProgress: 10028,
   statusInvalidDownloadClient: 10029,
+  statusUserNotInWhiteList: 10030,
 
   // -- events
   // objectType
