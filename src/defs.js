@@ -194,6 +194,7 @@ module.exports = {
   statusAdminInProgress: 10028,
   statusInvalidDownloadClient: 10029,
   statusUserNotInWhiteList: 10030,
+  statusIperf3ServerFailed: 10031,
 
   // -- events
   // objectType
