@@ -4,7 +4,7 @@ const { log } = require("./logFile");
 
 async function spawnAsync(command, args, stdinData) {
   //
-  log("spawnAsync: " + command + ", " + JSON.stringify(args), "spwn", "error");
+  log("spawnAsync: " + command + ", " + JSON.stringify(args), "spwn", "info");
 
   let stdout = "";
   let stderr = "";
