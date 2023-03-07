@@ -16,7 +16,7 @@ const {
 
 global._8fb20139_fb80_458d_bca5_25310e0c68ec_logger;
 global._8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransport;
-global._8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportForTailing;
+//--global._8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportForTailing;
 //global._8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportEx;
 
 // const levels = {
@@ -56,11 +56,30 @@ function logInit(logfilePath_, logFilenameBase_) {
     }
   );
 
-  global._8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportForTailing = new transports.File(
-    {
-      name: "iipzyTailer",
-      filename: logFilenameBase + ".log",
-      dirname: logfilePath
+  // 2023-03-07 - Change file for trailing from actual file to link.
+  //--global._8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportForTailing = new transports.File(
+  //--  {
+  //--    name: "iipzyTailer",
+  //--    filename: logFilenameBase + ".log",
+  //--    dirname: logfilePath
+  //--  }
+  //--);
+
+  global._8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransport.on(
+    "new",
+    function(newFilename) {
+      log(
+        "---transport.new: newFilename = " +
+        newFilename,
+        "log",
+        "info"
+      );
+      // link file for tailing
+      const fileForTailing = path.join(logfilePath, logFilenameBase + ".log");
+      try {
+        fs.unlinkSync( fileForTailing );
+      } catch(ex) {}
+      fs.symlinkSync( newFilename, fileForTailing, 'file' );
     }
   );
 
@@ -75,9 +94,9 @@ function logInit(logfilePath_, logFilenameBase_) {
         "log",
         "info"
       );
-      // truncate file for tailing
-      const fileForTailing = path.join(logfilePath, logFilenameBase + ".log");
-      fs.truncateSync(fileForTailing);
+      //--// truncate file for tailing
+      //--const fileForTailing = path.join(logfilePath, logFilenameBase + ".log");
+      //--fs.truncateSync(fileForTailing);
     }
   );
 
@@ -150,15 +169,15 @@ function logInit(logfilePath_, logFilenameBase_) {
       })
     ),
     transports: [
-      _8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransport,
-      _8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportForTailing,
-      new transports.Console()
+      _8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransport //--,
+      //-- _8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportForTailing,
+      //-- new transports.Console()
     ],
     exceptionHandlers: [
       //_8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportEx,
-      _8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransport,
-      _8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportForTailing,
-      new transports.Console()
+      _8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransport //--,
+      //-- _8fb20139_fb80_458d_bca5_25310e0c68ec_fileTransportForTailing,
+      //--new transports.Console()
     ],
     exitOnError: false
   });
