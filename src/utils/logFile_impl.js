@@ -12,6 +12,8 @@ const {
   fileStatAsync
 } = require("./fileIO");
 
+const {now} = require("./time");
+
 //global._8fb20139_fb80_458d_bca5_25310e0c68ec_ = {};
 
 global._8fb20139_fb80_458d_bca5_25310e0c68ec_logger;
@@ -134,7 +136,8 @@ function logInit(logfilePath_, logFilenameBase_) {
     format: combine(
       timestamp({
         format: () => {
-          return moment().format("YYYY-MM-DD HH:mm:ss.SSSZ");
+          //return moment().format("YYYY-MM-DD HH:mm:ss.SSS");
+          return now();
         }
       }),
       printf(info => {
@@ -289,7 +292,7 @@ function log(message, label, level) {
 
 function timestampToString(timestamp) {
   // NB: convert timestamp to number.
-  return moment(timestamp * 1).format("YYYY-MM-DD HH:mm:ss.SSSZ");
+  return moment(timestamp * 1).format("YYYY-MM-DD HH:mm:ss.SSS");
 }
 
 function setLogLevel(logLevel) {
