@@ -136,8 +136,8 @@ function logInit(logfilePath_, logFilenameBase_) {
     format: combine(
       timestamp({
         format: () => {
-          //return moment().format("YYYY-MM-DD HH:mm:ss.SSS");
-          return now();
+          return moment().format("YYYY-MM-DD HH:mm:ss.SSSZ");
+          //return now();
         }
       }),
       printf(info => {
@@ -292,7 +292,7 @@ function log(message, label, level) {
 
 function timestampToString(timestamp) {
   // NB: convert timestamp to number.
-  return moment(timestamp * 1).format("YYYY-MM-DD HH:mm:ss.SSS");
+  return moment(timestamp * 1).format("YYYY-MM-DD HH:mm:ss.SSSZ");
 }
 
 function setLogLevel(logLevel) {
