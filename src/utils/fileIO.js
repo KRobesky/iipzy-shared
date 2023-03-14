@@ -2,7 +2,7 @@ var { Mutex } = require("async-mutex");
 const path = require("path");
 const fs = require("fs");
 
-const { log } = require("./logFile");
+//--const { log } = require("./logFile");
 
 const mutex = new Mutex();
 
@@ -79,7 +79,7 @@ async function fileReadAsync_helper(path) {
       }
     }
   } catch (ex) {
-    log("(Exception) fileReadAsync: " + ex, "fio", "error");
+    console.log("(Exception) fileReadAsync: " + ex);
   }
   return null;
 }
@@ -94,7 +94,7 @@ async function fileReadDirAsync(path, filter) {
       });
     });
   } catch (ex) {
-    log("(Exception) fileReadDirAsync: " + ex, "fio", "error");
+    console.log("(Exception) fileReadDirAsync: " + ex);
     return [];
   }
 }
@@ -109,7 +109,7 @@ async function fileRenameAsync(oldPath, newPath) {
       });
     });
   } catch (ex) {
-    log("(Exception) fileRenameAsync: " + ex, "fio", "error");
+    console.log("(Exception) fileRenameAsync: " + ex);
     return false;
   }
 }
@@ -124,7 +124,7 @@ async function fileStatAsync(path) {
       });
     });
   } catch (ex) {
-    log("(Exception) fileStatAsync: " + ex, "fio", "error");
+    console.log("(Exception) fileStatAsync: " + ex);
     return {};
   }
 }
@@ -166,7 +166,7 @@ async function fileWriteAsync_helper(path, data) {
       });
     });
   } catch (ex) {
-    log("(Exception) fileWriteAsync: " + ex, "fio", "error");
+    console.log("(Exception) fileWriteAsync: " + ex);
   }
 }
 
