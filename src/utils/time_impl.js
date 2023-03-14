@@ -1,7 +1,13 @@
 const moment = require("moment");
-//--const printf = require('printf');
+//const printf = require('printf');
+
+//const { log } = require("./logFile");
 
 let timezoneOffsetMinutes = 0;
+
+function local_hour_to_gmt_hour(local_hour) {
+  return Math.abs(moment().add(timezoneOffsetMinutes, 'minutes').hour());
+}
 
 function now() {
   return moment().format("YYYY-MM-DD HH:mm:ss.SSSZ");
@@ -21,7 +27,7 @@ function now() {
 }
 
 function now_local() {
-  return moment().add(timezoneOffsetMinutes, 'minutes');
+  return moment().add(timezoneOffsetMinutes, 'minutes').format('MMMM Do YYYY, h:mm:ss a');
 }
 
 function set_timezoneOffsetMinutes(timezoneOffset) {
@@ -35,4 +41,4 @@ function set_timezoneOffsetMinutes(timezoneOffset) {
   timezoneOffsetMinutes = tzo_totalmins;
 }
 
-module.exports = { now, now_local, set_timezoneOffsetMinutes };
+module.exports = { local_hour_to_gmt_hour, now, now_local, set_timezoneOffsetMinutes };
