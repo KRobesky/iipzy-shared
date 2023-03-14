@@ -20,7 +20,7 @@ function now() {
   */
 }
 
-function now_local(timezoneOffsetMinutes) {
+function now_local() {
   return moment().add(timezoneOffsetMinutes, 'minutes');
 }
 
