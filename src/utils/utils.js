@@ -33,6 +33,7 @@ async function processErrorHandler(processStopHandler, processAlertHandler) {
       "perr",
       "error"
     );
+    log("stack: " + err.stack, "perr", "info");
 
     if (processAlertHandler)
       await processAlertHandler(
