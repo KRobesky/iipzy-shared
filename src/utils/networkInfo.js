@@ -1,8 +1,8 @@
 const network = require("network");
 
-const Defs = require("iipzy-shared/src/defs");
-const { log } = require("iipzy-shared/src/utils/logFile");
-const { sleep } = require("iipzy-shared/src/utils/utils");
+const Defs = require("../defs");
+const { log } = require("./logFile");
+const { sleep } = require("./utils");
 
 async function getGatewayIp() {
   try {
