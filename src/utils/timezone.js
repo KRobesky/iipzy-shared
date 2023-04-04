@@ -2,10 +2,10 @@ const exec = require("child_process").execSync;
 const fs = require("fs");
 const publicIp = require("public-ip");
 
-const { log } = require("iipzy-shared/src/utils/logFile");
-const http = require("iipzy-shared/src/services/httpService");
-const { spawnAsync } = require("iipzy-shared/src/utils/spawnAsync");
-const { set_timezoneOffsetMinutes } = require("iipzy-shared/src/utils/time");
+const { log } = require("./logFile");
+const http = require("../services/httpService");
+//const { spawnAsync } = require("./spawnAsync");
+const { set_timezoneOffsetMinutes } = require("./time");
 
 const userDataPath = process.platform === "win32" ? "c:/temp/" : "/etc/iipzy";
 
