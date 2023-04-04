@@ -1,7 +1,7 @@
 const fs = require("fs");
 
-const { log } = require("iipzy-shared/src/utils/logFile");
-const Defs = require("iipzy-shared/src/defs");
+const { log } = require("./logFile");
+const Defs = require("../defs");
 
 function init() {
   const platform = process.platform;

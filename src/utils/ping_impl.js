@@ -1,7 +1,7 @@
 const { spawn } = require("child_process");
 
-const { log } = require("iipzy-shared/src/utils/logFile");
-const { spawnAsync } = require("iipzy-shared/src/utils/spawnAsync");
+const { log } = require("./logFile");
+const { spawnAsync } = require("./spawnAsync");
 
 let doSimulateDroppedPackets = false;
 

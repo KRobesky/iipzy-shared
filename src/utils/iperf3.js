@@ -2,8 +2,8 @@ const { spawn } = require("child_process");
 const path = require("path");
 const electron = require("electron");
 
-const { log } = require("iipzy-shared/src/utils/logFile");
-const { fileChmodAsync } = require("iipzy-shared/src/utils/fileIO");
+const { log } = require("./logFile");
+const { fileChmodAsync } = require("./fileIO");
 
 let iperf3Path = null;
 let needChmod = true;
