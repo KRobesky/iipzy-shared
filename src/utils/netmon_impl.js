@@ -3,10 +3,11 @@ const { spawn } = require("child_process");
 const { log } = require("./logFile");
 const { sleep } = require("./utils");
 const { spawnAsync } = require("./spawnAsync");
+const { threadId } = require("worker_threads");
 
 class NetRate {
   constructor(title, intervalSeconds, dataFunc) {
-    log("NetRate.constructor: title = " + title + ", intervalSeconds = " + intervalSeconds, "ping", "info");
+    log("NetRate.constructor: title = " + title + ", intervalSeconds = " + intervalSeconds, "nrat", "info");
     this.title = title;
     this.intervalSeconds = intervalSeconds;
     this.dataFunc = dataFunc;
@@ -14,15 +15,13 @@ class NetRate {
     this.cancelled = false;
 
     // netrate
-    this.netrate_interval = null
-    this.cur_netrate_sample = {};
-    this.cur_netrate_value = {};
-    this.cur_netrate_sample = this.initNetRateSample();
+    this.interval = null
+    this.cur_sample = null;
  
     this.stdoutLine = "";
   }
 
-  initNetRateSample() {
+  initSample() {
     return {
       sample_time : null,
       rx_bytes : parseInt(0),
@@ -36,20 +35,20 @@ class NetRate {
   
   startSendSample() {
     this.getRxTxData();
-    this.netrate_interval = setInterval(() => {
+    this.interval = setInterval(() => {
       this.getRxTxData(); 
     }, this.intervalSeconds * 1000);      
   }
 
   stopSendSample() {
-    if (this.netrate_interval) {
-      clearInterval(this.netrate_interval);
-      this.netrate_interval = null;
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
     }
   }
 
   getRxTxData() {
-    log("NetRate.getRxTxRate", "rate", "info");
+    log("NetRate.getRxTxRate", "nrat", "info");
 
     if (this.cancelled) return;
 
@@ -68,9 +67,8 @@ class NetRate {
 
       const lines = data.toString().split('\n');
 
-      let new_sample = this.initNetRateSample();
-      new_sample.sample_time = Date.now();
-      
+      let new_sample = this.initSample();
+       
       let i = 0;
       for (var line in lines) {
         if (line == 3) {
@@ -88,11 +86,11 @@ class NetRate {
       } 
 
       /*
-      log("NetRate: rx_bytes = " + new_sample.rx_bytes + ", rx_errors = " + new_sample.rx_errors + ", rx_dropped = " + new_sample.rx_dropped, "rate", "info");
-      log("NetRate: tx_bytes = " + new_sample.tx_bytes + ", tx_errors = " + new_sample.tx_errors + ", tx_dropped = " + new_sample.tx_dropped, "rate", "info");
+      log("NetRate: rx_bytes = " + new_sample.rx_bytes + ", rx_errors = " + new_sample.rx_errors + ", rx_dropped = " + new_sample.rx_dropped, "nrat", "info");
+      log("NetRate: tx_bytes = " + new_sample.tx_bytes + ", tx_errors = " + new_sample.tx_errors + ", tx_dropped = " + new_sample.tx_dropped, "nrat", "info");
       */
 
-      if (this.cur_netrate_sample.sample_time) {
+      if (this.cur_sample) {
 
         let ret = {
           sample_time : new_sample.sample_time,
@@ -106,53 +104,52 @@ class NetRate {
        
         // receive (down)
 
-        if (this.cur_netrate_sample.rx_bytes != 0 && new_sample.rx_bytes > this.cur_netrate_sample.rx_bytes) {
-          ret.rx_rate_bits = Math.round(((new_sample.rx_bytes - this.cur_netrate_sample.rx_bytes) * 8) / ((new_sample.sample_time - this.cur_netrate_sample.sample_time) / 1000));
+        if (this.cur_sample.rx_bytes != 0 && new_sample.rx_bytes > this.cur_sample.rx_bytes) {
+          ret.rx_rate_bits = Math.round(((new_sample.rx_bytes - this.cur_sample.rx_bytes) * 8) / ((new_sample.sample_time - this.cur_sample.sample_time) / 1000));
         }
 
-        if (new_sample.rx_errors > this.cur_netrate_sample.rx_errors) {
-          ret.rx_new_errors = new_sample.rx_errors - this.cur_netrate_sample.rx_errors;
+        if (new_sample.rx_errors > this.cur_sample.rx_errors) {
+          ret.rx_new_errors = new_sample.rx_errors - this.cur_sample.rx_errors;
         }
 
         if (new_sample.rx_dropped > this.prev_rx_dropped) {
-          ret.rx_new_dropped = new_sample.rx_dropped - this.cur_netrate_sample.rx_dropped;
+          ret.rx_new_dropped = new_sample.rx_dropped - this.cur_sample.rx_dropped;
         }
 
         // transmit (up)
          
-        if (this.cur_netrate_sample.tx_bytes != 0 && new_sample.tx_bytes > this.cur_netrate_sample.tx_bytes) {
-          ret.tx_rate_bits = Math.round(((new_sample.tx_bytes - this.cur_netrate_sample.tx_bytes) * 8) / ((new_sample.sample_time - this.cur_netrate_sample.sample_time) / 1000));
+        if (this.cur_sample.tx_bytes != 0 && new_sample.tx_bytes > this.cur_sample.tx_bytes) {
+          ret.tx_rate_bits = Math.round(((new_sample.tx_bytes - this.cur_sample.tx_bytes) * 8) / ((new_sample.sample_time - this.cur_sample.sample_time) / 1000));
         }
       
-        if (new_sample.tx_errors > this.cur_netrate_sample.tx_errors) {
-          ret.tx_new_errors = new_sample.tx_errors - this.cur_netrate_sample.tx_errors;
+        if (new_sample.tx_errors > this.cur_sample.tx_errors) {
+          ret.tx_new_errors = new_sample.tx_errors - this.cur_sample.tx_errors;
         }
 
-        if (new_sample.tx_dropped > this.cur_netrate_sample.tx_dropped) {
-          ret.tx_new_dropped = new_sample.tx_dropped - this.cur_netrate_sample.tx_dropped;
+        if (new_sample.tx_dropped > this.cur_sample.tx_dropped) {
+          ret.tx_new_dropped = new_sample.tx_dropped - this.cur_sample.tx_dropped;
         }
        
-        //log("NetRate: result = " + JSON.stringify(ret, null, 2), "rate", "info");
-        this.cur_netrate_value = ret;
+        //log("NetRate: result = " + JSON.stringify(ret, null, 2), "nrat", "info");
         this.dataFunc(ret);
       }
 
-      this.cur_netrate_sample = new_sample;
+      this.cur_sample = new_sample;
     });
 
     exec.stderr.on("data", data => {
-      log("NetRate stderr: " + data.toString(), "rate", "info");
+      log("NetRate stderr: " + data.toString(), "nrat", "info");
     });
 
     exec.on("exit", code => {
-      //log(`NetRate exited with code ${code}`, "rate", "info");
+      //log(`NetRate exited with code ${code}`, "nrat", "info");
     });  
   }
 }
 
 class NetRateIPTables {
   constructor(title, intervalSeconds, dataFunc) {
-    log("NetRateIPTables.constructor: title = " + title + ", intervalSeconds = " + intervalSeconds, "ping", "info");
+    log("NetRateIPTables.constructor: title = " + title + ", intervalSeconds = " + intervalSeconds, "nrat", "info");
     this.title = title;
     this.intervalSeconds = intervalSeconds;
     this.dataFunc = dataFunc;
@@ -160,13 +157,13 @@ class NetRateIPTables {
     this.cancelled = false;
 
     // netrate
-    this.netrate_interval = null;
+    this.interval = null;
     this.first_time = true;
   }
 
-  initNetRateValue() {
+  initResult() {
     return {
-      sample_time : null,
+      sample_time : Date.now(),
       rx_rate_bits : parseInt(0),
       rx_rate_dns_bits : parseInt(0),
       rx_rate_rt_bits : parseInt(0),
@@ -177,16 +174,16 @@ class NetRateIPTables {
   }
 
   startSendSample() {
-    this.compute_netrate_value();
-    this.netrate_interval = setInterval(() => {
-      this.compute_netrate_value(); 
+    this.compute_netrate();
+    this.interval = setInterval(() => {
+      this.compute_netrate(); 
     }, this.intervalSeconds * 1000); 
   }
 
   stopSendSample() {
-    if (this.netrate_interval) {
-      clearInterval(this.netrate_interval);
-      this.netrate_interval = null;
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
     }
   }
 
@@ -211,13 +208,13 @@ class NetRateIPTables {
       //log("...results = " + JSON.stringify(results,null,2));
       return results;
     } catch (ex) {
-      log("(Exception) NetRateIPTables.readIpTables: " + ex, "ping", "info");
+      log("(Exception) NetRateIPTables.readIpTables: " + ex, "nrat", "info");
     }
     return null;
 	}
 
   updateNetRateValue(netrate_value, bytes, ingress, className) {
-    //log("NetRateIPTables.updateNetRateValue: bytes = " + bytes + ", ingress = " + ingress + ", className = " + className, "ping", "info");
+    //log("NetRateIPTables.updateNetRateValue: bytes = " + bytes + ", ingress = " + ingress + ", className = " + className, "nrat", "info");
     const bits = Math.round((bytes * 8) / this.intervalSeconds);
     switch (className) {
       case 'DNS': {
@@ -243,11 +240,9 @@ class NetRateIPTables {
 
 
   // NB: From iptables INGRESS_COUNT and EGRESS_COUNT
-  async compute_netrate_value() {
-    
+  async compute_netrate() {   
     try {
-      let netrate_value = this.initNetRateValue();
-      netrate_value.sample_time = Date.now();
+      let result = this.initResult();
       const ipTablesOutput = await this.readIpTables();
       for (let i = 0; i < ipTablesOutput.length; i++) {
         const chunk = ipTablesOutput[i];
@@ -263,18 +258,18 @@ class NetRateIPTables {
             //log("...key = " + key + ", tokens = " + JSON.stringify(tokens));
             switch (key) {
               case 'egress': {
-                this.updateNetRateValue(netrate_value, tokens[2], false, this.getClassName(line));
+                this.updateNetRateValue(result, tokens[2], false, this.getClassName(line));
                 break;
               }
               case 'egress_ipv6' : {
-                this.updateNetRateValue(netrate_value, tokens[2], false, this.getClassName(line));
+                this.updateNetRateValue(result, tokens[2], false, this.getClassName(line));
                 break;
               }
               case 'ingress':
-                this.updateNetRateValue(netrate_value, tokens[2], true, this.getClassName(line));
+                this.updateNetRateValue(result, tokens[2], true, this.getClassName(line));
                 break;
               case 'ingress_ipv6': {
-                this.updateNetRateValue(netrate_value, tokens[2], true, this.getClassName(line));
+                this.updateNetRateValue(result, tokens[2], true, this.getClassName(line));
                 break;
               }
               default: {
@@ -285,37 +280,262 @@ class NetRateIPTables {
         }
       }
 
-      //log("...netrate_value = " + JSON.stringify(netrate_value, null, 2));
+      //log("...result = " + JSON.stringify(result, null, 2));
 
       if (this.first_time) this.first_time = false;
-      else this.dataFunc(netrate_value);
+      else this.dataFunc(result);
 
       
     } catch (ex) {
-      log("(Exception) NetRateIPTables.compute_netrate_value: " + ex, "ping", "info");
+      log("(Exception) NetRateIPTables.compute_netrate: " + ex, "nrat", "info");
     }
   }  
 }
 
 
 class NetRateSaves {
-  constructor(title, intf, intervalSeconds, dataFunc) {
-    log("NetRateSaves.constructor: title = " + title + ", intf = " + intf + ", intervalSeconds = " + intervalSeconds, "ping", "info");
+  constructor(title, intfWAN, intfLAN, intervalSeconds, dataFunc) {
+    log("NetRateSaves.constructor: title = " + title + ", intfWAN = " + intfWAN + ", intfLAN = " + intfLAN + ", intervalSeconds = " + intervalSeconds, "nrat", "info");
     this.title = title;
-    this.intf = intf;
+    this.intfWAN = intfWAN;
+    this.intfLAN = intfLAN;
     this.intervalSeconds = intervalSeconds;
     this.dataFunc = dataFunc;
       
     this.cancelled = false;
 
     // netrate
-    this.netrate_interval = null
-    this.cur_netrate_sample = {};
-    this.cur_netrate_value = {};
-    //this.cur_netrate_sample = this.initNetRateSample();
- 
-    this.stdoutLine = "";
+    this.fq_codel_target = "1:11";
+    this.interval = null
+    this.cur_sample_WAN = null;
+    this.cur_sample_LAN = null;
   }
+
+  initSample() {
+    return {
+      sample_time : Date.now(),
+      dropped : parseInt(0),
+      backlog : parseInt(0)
+    }
+  }
+  
+  initResult() {
+    return {
+      sample_time : Date.now(),
+      dropped_WAN : parseInt(0),
+      backlog_WAN : parseInt(0),
+      dropped_LAN : parseInt(0),
+      backlog_LAN : parseInt(0),
+      saved : false
+    }
+  }
+
+  startSendSample() {
+    this.compute_saved();
+    this.interval = setInterval(() => {
+      this.compute_saved(); 
+    }, this.intervalSeconds * 1000); 
+  }
+
+  stopSendSample() {
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+  }
+
+  /*
+  tc -j -s -d qdisc show dev eth0
+  [
+    {
+      "kind": "htb",
+      "handle": "1:",
+      "root": true,
+      "refcnt": 9,
+      "options": {
+        "r2q": 10,
+        "default": "0x13",
+        "direct_packets_stat": 10,
+        "ver": "3.17",
+        "direct_qlen": 1000
+      },
+      "bytes": 127340427220,
+      "packets": 115187613,
+      "drops": 0,
+      "overlimits": 30329301,
+      "requeues": 2533,
+      "backlog": 0,
+      "qlen": 0
+    },
+    {
+      "kind": "fq_codel",
+      "handle": "14:",
+      "parent": "1:14",
+      "options": {
+        "limit": 10240,
+        "flows": 1024,
+        "quantum": 1514,
+        "target": 49999,
+        "interval": 499999,
+        "memory_limit": 33554432,
+        "ecn": true,
+        "drop_batch": 64
+      },
+      "bytes": 0,
+      "packets": 0,
+      "drops": 0,
+      "overlimits": 0,
+      "requeues": 0,
+      "backlog": 0,
+      "qlen": 0,
+      "maxpacket": 0,
+      "drop_overlimit": 0,
+      "new_flow_count": 0,
+      "ecn_mark": 0,
+      "new_flows_len": 0,
+      "old_flows_len": 0
+    },
+    {
+      "kind": "fq_codel",
+      "handle": "12:",
+      "parent": "1:12",
+      "options": {
+        "limit": 10240,
+        "flows": 1024,
+        "quantum": 1514,
+        "target": 49999,
+        "interval": 499999,
+        "memory_limit": 33554432,
+        "ecn": true,
+        "drop_batch": 64
+      },
+      "bytes": 54092766,
+      "packets": 134440,
+      "drops": 0,
+      "overlimits": 0,
+      "requeues": 0,
+      "backlog": 0,
+      "qlen": 0,
+      "maxpacket": 1492,
+      "drop_overlimit": 0,
+      "new_flow_count": 22404,
+      "ecn_mark": 0,
+      "new_flows_len": 1,
+      "old_flows_len": 1
+    },
+    {
+      "kind": "fq_codel",
+      "handle": "11:",
+      "parent": "1:11",
+      "options": {
+        "limit": 10240,
+        "flows": 1024,
+        "quantum": 1514,
+        "target": 49999,
+        "interval": 499999,
+        "memory_limit": 33554432,
+        "ecn": true,
+        "drop_batch": 64
+      },
+      "bytes": 49293080,
+      "packets": 519931,
+      "drops": 0,
+      "overlimits": 0,
+      "requeues": 0,
+      "backlog": 0,
+      "qlen": 0,
+      "maxpacket": 143,
+      "drop_overlimit": 0,
+      "new_flow_count": 236786,
+      "ecn_mark": 0,
+      "new_flows_len": 0,
+      "old_flows_len": 1
+    },
+    {
+      "kind": "fq_codel",
+      "handle": "13:",
+      "parent": "1:13",
+      "options": {
+        "limit": 10240,
+        "flows": 1024,
+        "quantum": 1514,
+        "target": 49999,
+        "interval": 499999,
+        "memory_limit": 33554432,
+        "ecn": true,
+        "drop_batch": 64
+      },
+      "bytes": 127237039098,
+      "packets": 114533230,
+      "drops": 0,
+      "overlimits": 0,
+      "requeues": 0,
+      "backlog": 0,
+      "qlen": 0,
+      "maxpacket": 68130,
+      "drop_overlimit": 0,
+      "new_flow_count": 20729068,
+      "ecn_mark": 0,
+      "new_flows_len": 1,
+      "old_flows_len": 8
+    }
+  ]
+  */
+
+  async get_sample(intf) {
+    const { stdout, stderr } = await spawnAsync("tc", [ "-j", "-s", "-d", "qdisc", "show", "dev", intf]);
+    if (stderr) {
+      log("(Error) NetRateSaved.get_sample: " + stderr, "nrat", "error");
+      return null;
+    }
+
+    try {
+      const ja = JSON.parse(stdout);
+
+      let sample = this.initSample();
+      for(let i = 0; i < ja.length; i++) {
+        const jo = ja[i];
+        if (jo.kind === "fq_codel" && jo.parent === this.fq_codel_target) {
+          sample.dropped = jo.drops;
+          sample.backlog = jo.backlog;
+          break;
+        }
+      }
+      return sample;
+    } catch (ex) {
+      log("(Exception) NetRateSaved.get_sample[" + intf + "]: " + ex, "nrat", "error");
+    }
+    return null;
+
+  }
+
+  async compute_saved() {
+    try {
+      const sample_WAN = await this.get_sample(this.intfWAN);
+      const sample_LAN = await this.get_sample(this.intfLAN);
+      
+      let result = this.initResult();
+      if (sample_WAN && this.cur_sample_WAN) {
+        result.dropped_WAN = Math.ceil((sample_WAN.dropped - this.cur_sample_WAN.dropped) / this.intervalSeconds);
+        result.backlog_WAN = Math.ceil((sample_WAN.backlog - this.cur_sample_WAN.backlog) / this.intervalSeconds);
+      }
+      if (sample_LAN && this.cur_sample_LAN) {
+        result.dropped_LAN = Math.ceil((sample_LAN.dropped - this.cur_sample_LAN.dropped) / this.intervalSeconds);
+        result.backlog_LAN = Math.ceil((sample_LAN.backlog - this.cur_sample_LAN.backlog) / this.intervalSeconds);
+      }
+      result.saved = (result.dropped_WAN > 0 || result.backlog_WAN > 0 || result.dropped_LAN > 0 || result.backlog_LAN > 0);
+
+      if (this.cur_sample_WAN && this.cur_sample_LAN) {
+        this.dataFunc(result);
+        log("NetRateSaved.compute_saved: result = " + JSON.stringify(result), "nrat", "info");
+      } 
+      this.cur_sample_WAN = sample_WAN;
+      this.cur_sample_LAN = sample_LAN;
+    } catch (ex) {
+      log("(Exception) NetRateSaved.compute_saved[" + this.intf + "]: " + ex, "nrat", "error");
+    }
+    return null;
+  } 
 }
 
 module.exports = {NetRate, NetRateIPTables, NetRateSaves};

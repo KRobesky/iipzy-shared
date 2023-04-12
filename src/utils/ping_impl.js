@@ -31,6 +31,7 @@ class Ping {
     //this.wantNetRate = wantNetRate ? wantNetRate : false;
     //this.netrate = wantNetRate ? new NetRate(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : null;
     this.netrate = wantNetRate ? new NetRateIPTables(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : null;
+    this.netrate_saves = wantNetRate ? new NetRateSaves(title, "eth0", "eth1", this.intervalSeconds * 6, this.netrateSavesDataFunc.bind(this)) : null;
     
     this.cancelled = false;
 
@@ -49,8 +50,9 @@ class Ping {
     // netrate
     //this.netrate_interval = null
     //this.cur_netrate_sample = {};
-    this.cur_netrate_value = {};
+    this.cur_netrate_result = {};
     //this.initNetRateSample(this.cur_netrate_sample);
+    this.cur_netrate_saves_result = {};
  
     this.stdoutLine = "";
   }
@@ -85,7 +87,7 @@ class Ping {
               this.cur_ping_sample.dropped = true;
             }
           }
-          //log("ping.sendPingSample: cur_netrate_value = " + JSON.stringify(this.cur_netrate_value));
+          //log("ping.sendPingSample: cur_netrate_result = " + JSON.stringify(this.cur_netrate_result));
           /*
           rx_rate_bits : parseInt(0),
           rx_new_errors : parseInt(0),
@@ -98,23 +100,23 @@ class Ping {
             // consolidate ping and netrate
             let consolidatedSample = this.cur_ping_sample;       
             // NetRate or NetRateIPTables 
-            consolidatedSample.rx_rate_bits = this.cur_netrate_value.rx_rate_bits;
-            if (this.cur_netrate_value.rx_rate_dns_bits)
-				      consolidatedSample.rx_rate_bits += this.cur_netrate_value.rx_rate_dns_bits;
-            if (this.cur_netrate_value.rx_rate_rt_bits)
-				      consolidatedSample.rx_rate_bits += this.cur_netrate_value.rx_rate_rt_bits;
-            consolidatedSample.tx_rate_bits = this.cur_netrate_value.tx_rate_bits;
-            if (this.cur_netrate_value.tx_rate_dns_bits)
-             	consolidatedSample.tx_rate_bits += this.cur_netrate_value.tx_rate_dns_bits;
-            if (this.cur_netrate_value.tx_rate_rt_bits)
-              consolidatedSample.tx_rate_bits +=  this.cur_netrate_value.tx_rate_rt_bits;
+            consolidatedSample.rx_rate_bits = this.cur_netrate_result.rx_rate_bits;
+            if (this.cur_netrate_result.rx_rate_dns_bits)
+				      consolidatedSample.rx_rate_bits += this.cur_netrate_result.rx_rate_dns_bits;
+            if (this.cur_netrate_result.rx_rate_rt_bits)
+				      consolidatedSample.rx_rate_bits += this.cur_netrate_result.rx_rate_rt_bits;
+            consolidatedSample.tx_rate_bits = this.cur_netrate_result.tx_rate_bits;
+            if (this.cur_netrate_result.tx_rate_dns_bits)
+             	consolidatedSample.tx_rate_bits += this.cur_netrate_result.tx_rate_dns_bits;
+            if (this.cur_netrate_result.tx_rate_rt_bits)
+              consolidatedSample.tx_rate_bits +=  this.cur_netrate_result.tx_rate_rt_bits;
             // NetRateIPTables
-            consolidatedSample.rx_rate_dns_bits = this.cur_netrate_value.rx_rate_dns_bits;
-            consolidatedSample.rx_rate_rt_bits = this.cur_netrate_value.rx_rate_rt_bits;
-            consolidatedSample.tx_rate_dns_bits = this.cur_netrate_value.tx_rate_dns_bits;
-            consolidatedSample.tx_rate_rt_bits = this.cur_netrate_value.tx_rate_rt_bits;
+            consolidatedSample.rx_rate_dns_bits = this.cur_netrate_result.rx_rate_dns_bits;
+            consolidatedSample.rx_rate_rt_bits = this.cur_netrate_result.rx_rate_rt_bits;
+            consolidatedSample.tx_rate_dns_bits = this.cur_netrate_result.tx_rate_dns_bits;
+            consolidatedSample.tx_rate_rt_bits = this.cur_netrate_result.tx_rate_rt_bits;
             // NetRateTC
-            consolidatedSample.saved = false;    
+            consolidatedSample.saved = this.cur_netrate_saves_result.saved;    
             //log("ping.sendPingSample: consolidatedSample" + JSON.stringify(consolidatedSample, null, 2), "ping", "error");
             this.dataFunc(JSON.stringify(consolidatedSample));
           } else {
@@ -198,6 +200,7 @@ class Ping {
 
     this.startSendPingSample();
     if (this.netrate) this.netrate.startSendSample();
+    if (this.netrate_saves) this.netrate_saves.startSendSample();
 
     this.exec.stdout.on("data", data => {
       const str = data.toString();
@@ -297,7 +300,12 @@ class Ping {
  
   // netrate
   netrateDataFunc(data) {
-    this.cur_netrate_value = data;
+    this.cur_netrate_result = data;
+  }
+
+  // netrateSaves
+  netrateSavesDataFunc(data) {
+    this.cur_netrate_saves_result = data;
   }
 
   cancel() {
