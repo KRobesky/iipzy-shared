@@ -1,7 +1,7 @@
 const { spawn } = require("child_process");
 
 const { log } = require("./logFile");
-//const { sleep } = require("./utils");
+const { sleep } = require("./utils");
 const { spawnAsync } = require("./spawnAsync");
 
 class NetRate {
@@ -169,10 +169,10 @@ class NetRateIPTables {
       sample_time : null,
       rx_rate_bits : parseInt(0),
       rx_rate_dns_bits : parseInt(0),
-      rx_rate_realtime_bits : parseInt(0),
+      rx_rate_rt_bits : parseInt(0),
       tx_rate_bits : parseInt(0),
       tx_rate_dns_bits : parseInt(0),
-      tx_rate_realtime_bits : parseInt(0)
+      tx_rate_rt_bits : parseInt(0)
     }
   }
 
@@ -225,7 +225,7 @@ class NetRateIPTables {
         break;
       }
       case 'RealTime' : {
-        if (ingress) netrate_value.rx_rate_realtime_bits = bits; else netrate_value.tx_rate_realtime_bits = bits;
+        if (ingress) netrate_value.rx_rate_rt_bits = bits; else netrate_value.tx_rate_rt_bits = bits;
         break;
       }
       case 'Other' : {
