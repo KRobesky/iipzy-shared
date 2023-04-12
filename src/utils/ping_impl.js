@@ -1,7 +1,7 @@
 const { spawn } = require("child_process");
 
 const { log } = require("./logFile");
-const NetRate = require("./netrate");
+const {NetRate, NetRateIPTables, NetRateSaves} = require("./netmon");
 const { spawnAsync } = require("./spawnAsync");
 
 let doSimulateDroppedPackets = false;
@@ -29,7 +29,8 @@ class Ping {
     this.durationSeconds = durationSeconds ? durationSeconds : 0;
     this.intervalSeconds = intervalSeconds ? intervalSeconds : 1;
     //this.wantNetRate = wantNetRate ? wantNetRate : false;
-    this.netrate = wantNetRate ? new NetRate(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : null;
+    //this.netrate = wantNetRate ? new NetRate(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : null;
+    this.netrate = wantNetRate ? new NetRateIPTables(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : null;
     
     this.cancelled = false;
 
@@ -180,7 +181,7 @@ class Ping {
       }, this.durationSeconds * 1000);
 
     this.startSendPingSample();
-    if (this.netrate) this.netrate.startSendNetRateSample();
+    if (this.netrate) this.netrate.startSendSample();
 
     this.exec.stdout.on("data", data => {
       const str = data.toString();
@@ -217,7 +218,7 @@ class Ping {
       log(`Ping exited with code ${code}`, "ping", "info");
 
       this.stopSendPingSample();
-      if (this.netyrate) this.netrate.stopSendNetRateSample();
+      if (this.netyrate) this.netrate.stopSendSample();
 
       if (code !== 0 && this.durationSeconds === 0 && !this.cancelled) {
         // restart.

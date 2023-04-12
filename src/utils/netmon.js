@@ -1,2 +1,2 @@
-const NetRate = require("./netrate_impl");
-module.exports = NetRate;
+const {NetRate, NetRateIPTables, NetRateSaves} = require("./netmon_impl");
+module.exports = {NetRate, NetRateIPTables, NetRateSaves};
