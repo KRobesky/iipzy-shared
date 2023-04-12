@@ -1,7 +1,7 @@
 const { spawn } = require("child_process");
 
 const { log } = require("./logFile");
-const {NetRate, NetRateIPTables, NetRateSaves} = require("./netmon");
+const {NetRate, NetRateIPTables, NetRateSaves} = require("./netrate");
 const { spawnAsync } = require("./spawnAsync");
 
 let doSimulateDroppedPackets = false;
@@ -11,14 +11,11 @@ class Ping {
     log(
       "Ping.constructor: title = " +
         title +
-        ", target = " +
-        target +
-        ", duration = " +
-        durationSeconds +
-        ", interval " +
-        intervalSeconds +
-        ", wantNetRate " +
-        wantNetRate,
+        ", target = " + target +
+        ", duration = " + durationSeconds +
+        ", interval " + intervalSeconds +
+        ", wantNetRate " + wantNetRate + 
+        ", tcMode " + tcMode,
       "ping",
       "info"
     );

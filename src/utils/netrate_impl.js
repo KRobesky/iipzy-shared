@@ -23,7 +23,7 @@ class NetRate {
 
   initSample() {
     return {
-      sample_time : null,
+      sample_time : Date.now(),
       rx_bytes : parseInt(0),
       rx_errors : parseInt(0),
       rx_dropped : parseInt(0),
@@ -85,10 +85,7 @@ class NetRate {
         i++;
       } 
 
-      /*
-      log("NetRate: rx_bytes = " + new_sample.rx_bytes + ", rx_errors = " + new_sample.rx_errors + ", rx_dropped = " + new_sample.rx_dropped, "nrat", "info");
-      log("NetRate: tx_bytes = " + new_sample.tx_bytes + ", tx_errors = " + new_sample.tx_errors + ", tx_dropped = " + new_sample.tx_dropped, "nrat", "info");
-      */
+      //log("NetRate: new_sample = " + JSON.stringify(new_sample, null, 2), "nrat", "info");
 
       if (this.cur_sample) {
 
@@ -104,7 +101,7 @@ class NetRate {
        
         // receive (down)
 
-        if (this.cur_sample.rx_bytes != 0 && new_sample.rx_bytes > this.cur_sample.rx_bytes) {
+        if (new_sample.rx_bytes > this.cur_sample.rx_bytes) {
           ret.rx_rate_bits = Math.round(((new_sample.rx_bytes - this.cur_sample.rx_bytes) * 8) / ((new_sample.sample_time - this.cur_sample.sample_time) / 1000));
         }
 
@@ -118,7 +115,7 @@ class NetRate {
 
         // transmit (up)
          
-        if (this.cur_sample.tx_bytes != 0 && new_sample.tx_bytes > this.cur_sample.tx_bytes) {
+        if (new_sample.tx_bytes > this.cur_sample.tx_bytes) {
           ret.tx_rate_bits = Math.round(((new_sample.tx_bytes - this.cur_sample.tx_bytes) * 8) / ((new_sample.sample_time - this.cur_sample.sample_time) / 1000));
         }
       
@@ -135,6 +132,7 @@ class NetRate {
       }
 
       this.cur_sample = new_sample;
+      //log("NetRate: this.cur_sample = " + JSON.stringify(this.cur_sample, null, 2), "nrat", "info");
     });
 
     exec.stderr.on("data", data => {
