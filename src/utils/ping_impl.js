@@ -7,7 +7,7 @@ const { spawnAsync } = require("./spawnAsync");
 let doSimulateDroppedPackets = false;
 
 class Ping {
-  constructor(title, dataFunc, doneFunc, target, durationSeconds, intervalSeconds, wantNetRate) {
+  constructor(title, dataFunc, doneFunc, target, durationSeconds, intervalSeconds, wantNetRate, tcMode) {
     log(
       "Ping.constructor: title = " +
         title +
@@ -28,10 +28,14 @@ class Ping {
     this.target = target;
     this.durationSeconds = durationSeconds ? durationSeconds : 0;
     this.intervalSeconds = intervalSeconds ? intervalSeconds : 1;
-    //this.wantNetRate = wantNetRate ? wantNetRate : false;
-    //this.netrate = wantNetRate ? new NetRate(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : null;
-    this.netrate = wantNetRate ? new NetRateIPTables(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : null;
-    this.netrate_saves = wantNetRate ? new NetRateSaves(title, "eth0", "eth1", this.intervalSeconds * 6, this.netrateSavesDataFunc.bind(this)) : null;
+    this.netrate = null;
+    this.netrate_saves = null;
+    if (wantNetRate) {
+      this.netrate = tcMode ? new NetRateIPTables(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : 
+                              new NetRate(title, this.intervalSeconds, this.netrateDataFunc.bind(this));
+      this.netrate_saves = tcMode ? new NetRateSaves(title, "eth0", "eth1", this.intervalSeconds * 6, this.netrateSavesDataFunc.bind(this)) : null;
+
+    }
     
     this.cancelled = false;
 
@@ -48,10 +52,7 @@ class Ping {
     this.dropCheckEnabled = false;
 
     // netrate
-    //this.netrate_interval = null
-    //this.cur_netrate_sample = {};
     this.cur_netrate_result = {};
-    //this.initNetRateSample(this.cur_netrate_sample);
     this.cur_netrate_saves_result = {};
  
     this.stdoutLine = "";
