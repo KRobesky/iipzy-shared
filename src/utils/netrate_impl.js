@@ -307,6 +307,10 @@ class NetRateSaves {
     this.interval = null
     this.cur_sample_WAN = null;
     this.cur_sample_LAN = null;
+
+    // bit mask
+    this.SAVED_WAN = 1;
+    this.SAVED_LAN = 2;
   }
 
   initSample() {
@@ -324,7 +328,7 @@ class NetRateSaves {
       backlog_WAN : parseInt(0),
       dropped_LAN : parseInt(0),
       backlog_LAN : parseInt(0),
-      saved : false
+      saved : 0
     }
   }
 
@@ -521,7 +525,9 @@ class NetRateSaves {
         result.dropped_LAN = Math.ceil((sample_LAN.dropped - this.cur_sample_LAN.dropped) / this.intervalSeconds);
         result.backlog_LAN = Math.ceil((sample_LAN.backlog - this.cur_sample_LAN.backlog) / this.intervalSeconds);
       }
-      result.saved = (result.dropped_WAN > 0 || result.backlog_WAN > 0 || result.dropped_LAN > 0 || result.backlog_LAN > 0);
+
+      if (result.dropped_WAN > 0 || result.backlog_WAN > 0) result_saved = this.SAVED_WAN;
+      if (result.dropped_LAN > 0 || result.backlog_LAN > 0) result_saved |= this.SAVED_LAN;
 
       if (this.cur_sample_WAN && this.cur_sample_LAN) {
         this.dataFunc(result);
