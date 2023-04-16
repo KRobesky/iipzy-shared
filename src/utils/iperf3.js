@@ -96,12 +96,13 @@ class Iperf3 {
           isTotal = true;
           this.avgThoughputMBits = mbitsPerSec;
         }
-        let json = '{"down":' + this.down;
-        json += ',"mbitsPerSec":' + mbitsPerSec;
-        json += ',"isTotal":' + isTotal;
-        json += "}";
-        //log('...handleIperf3ThroughputBlob: json = "' + json + '"', "iprf", "info");
-        this.dataFunc(json);
+        const jo = {
+          down:         this.down,
+          mbitsPerSec:  mbitsPerSec,
+          isTotal:      isTotal
+        };
+        //log('...handleIperf3ThroughputBlob: jo = "' + JSON.stringify(jo) + '"', "iprf", "info");
+        this.dataFunc(jo);
       }
     }
   }

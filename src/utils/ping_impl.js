@@ -116,10 +116,10 @@ class Ping {
             // NetRateTC
             consolidatedSample.saved = this.cur_netrate_saves_result.saved;    
             //log("ping.sendPingSample: consolidatedSample" + JSON.stringify(consolidatedSample, null, 2), "ping", "error");
-            this.dataFunc(JSON.stringify(consolidatedSample));
+            this.dataFunc(consolidatedSample);
           } else {
-            //log("ping.sendPingSample: consolidatedSample" + JSON.stringify(consolidatedSample), "ping", "error");
-            this.dataFunc(JSON.stringify(this.cur_ping_sample));
+            //log("ping.sendPingSample: this.cur_ping_sample" + JSON.stringify(this.cur_ping_sample), "ping", "error");
+            this.dataFunc(this.cur_ping_sample);
           }
         } catch (ex) {
           log("(Exception) ping.sendPingSample: " + ex, "ping", "error");
