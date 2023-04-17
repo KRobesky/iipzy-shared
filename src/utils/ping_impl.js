@@ -3,6 +3,7 @@ const { spawn } = require("child_process");
 const { log } = require("./logFile");
 const {NetRate, NetRateIPTables, NetRateSaves} = require("./netrate");
 const { spawnAsync } = require("./spawnAsync");
+const { sleep } = require("./utils");
 
 let doSimulateDroppedPackets = false;
 
@@ -156,13 +157,6 @@ class Ping {
         this.totalSamples++;
         this.totalTimeMillis += Number(time);
         return { timeMillis: time, dropped: false };
-        // return (
-        //   '{"timeMillis":' +
-        //   time +
-        //   ',"dropped":false, "timeStamp": "' +
-        //   new Date().toISOString() +
-        //   '"}'
-        // );
       }
     } else if (
       str.startsWith("Request timed out") ||
@@ -170,13 +164,7 @@ class Ping {
     ) {
       this.totalDroppedPackets++;
       return { timeMillis: "0", dropped: true };
-      // return (
-      //   '{"timeMillis":' +
-      //   0 +
-      //   ',"dropped":true, "timeStamp": "' +
-      //   new Date().toISOString() +
-      //   '"}'
-      // );
+
     }
     return {};
   }
@@ -247,16 +235,14 @@ class Ping {
       }
 
       const avgMillis = this.totalSamples === 0 ? 0 : this.totalTimeMillis / this.totalSamples;
+
       if (this.doneFunc) {
-        const json =
-          '{"avgMillis":' +
-          avgMillis +
-          ', "droppedPackets":' +
-          this.totalDroppedPackets +
-          ',"timeStamp": "' +
-          Date.now() +
-          '"}';
-        this.doneFunc(code, json);
+        const jo = {
+          avgMillis:      avgMillis,
+          droppedPackets: this.totalDroppedPackets,
+          timeStamp:      Date.now()
+        };
+        this.doneFunc(code, jo);
       }
     });
   }
