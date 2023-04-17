@@ -338,12 +338,17 @@ function getLogDir() {
   return logfilePath;
 }
 
+function getLogLevel() {
+  return defaultLevel;
+}
+
 function getLogPath() {
   return path.join(logfilePath, logFilenameBase + ".log");
 }
 
 module.exports = {
   getLogDir,
+  getLogLevel,
   getLogPath,
   log,
   logInit,

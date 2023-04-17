@@ -1,5 +1,6 @@
 const {
   getLogDir,
+  getLogLevel,
   getLogPath,
   log,
   logInit,
@@ -10,6 +11,7 @@ const {
 //  this module is referenced.  Effectively making logFile_Impl a singleton - because it contains shared data.
 module.exports = {
   getLogDir,
+  getLogLevel,
   getLogPath,
   log,
   logInit,
