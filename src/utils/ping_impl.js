@@ -1,6 +1,7 @@
 const { spawn } = require("child_process");
 
 const { log } = require("./logFile");
+const CpuMon = require("./cpuMon");
 const {NetRate, NetRateIPTables, NetRateSaves} = require("./netrate");
 const { spawnAsync } = require("./spawnAsync");
 const { sleep } = require("./utils");
@@ -26,13 +27,16 @@ class Ping {
     this.target = target;
     this.durationSeconds = durationSeconds ? durationSeconds : 0;
     this.intervalSeconds = intervalSeconds ? intervalSeconds : 1;
+    this.cpuMon = null;
     this.netrate = null;
     this.netrate_saves = null;
-    if (wantNetRate) {
-      this.netrate = tcMode ? new NetRateIPTables(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : 
-                              new NetRate(title, this.intervalSeconds, this.netrateDataFunc.bind(this));
-      this.netrate_saves = tcMode ? new NetRateSaves(title, "eth0", "eth1", this.intervalSeconds * 6, this.netrateSavesDataFunc.bind(this)) : null;
-
+    if (this.dataFunc) {
+      if (wantNetRate) {
+        this.netrate = tcMode ? new NetRateIPTables(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : 
+                                new NetRate(title, this.intervalSeconds, this.netrateDataFunc.bind(this));
+        this.netrate_saves = tcMode ? new NetRateSaves(title, "eth0", "eth1", this.intervalSeconds * 6, this.netrateSavesDataFunc.bind(this)) : null;
+      }
+      this.cpuMon = new CpuMon(title, 30, this.cpuMonDataFunc.bind(this));
     }
     
     this.cancelled = false;
@@ -52,6 +56,9 @@ class Ping {
     // netrate
     this.cur_netrate_result = {};
     this.cur_netrate_saves_result = {};
+
+    // cpumon
+    this.cur_cpumon_result = {};
  
     this.stdoutLine = "";
   }
@@ -65,7 +72,7 @@ class Ping {
   //        2.  If too old, send packets as dropped.
   //            - Too old is probably 5 seconds - 5 missed pings
 
-  startSendPingSample() {
+  startSendSample() {
     this.latestPingTime = 0;
     this.dropCheckEnabled = false;
     this.ping_interval = setInterval(() => {
@@ -115,7 +122,15 @@ class Ping {
             consolidatedSample.tx_rate_dns_bits = this.cur_netrate_result.tx_rate_dns_bits;
             consolidatedSample.tx_rate_rt_bits = this.cur_netrate_result.tx_rate_rt_bits;
             // NetRateTC
-            consolidatedSample.saved = this.cur_netrate_saves_result.saved;    
+            consolidatedSample.saved = this.cur_netrate_saves_result.saved;   
+            // CpuMon
+            consolidatedSample.temp_celsius    = this.cur_cpumon_result.temp_celsius;
+            consolidatedSample.cpu_utlz_user   = this.cur_cpumon_result.cpu_utlz_user;  
+            consolidatedSample.cpu_utlz_nice   = this.cur_cpumon_result.cpu_utlz_nice;  
+            consolidatedSample.cpu_utlz_system = this.cur_cpumon_result.cpu_utlz_system;
+            consolidatedSample.cpu_utlz_iowait = this.cur_cpumon_result.cpu_utlz_iowait;
+            consolidatedSample.cpu_utlz_steal  = this.cur_cpumon_result.cpu_utlz_steal;
+            consolidatedSample.cpu_utlz_idle   = this.cur_cpumon_result.cpu_utlz_idle;  
             //log("ping.sendPingSample: consolidatedSample" + JSON.stringify(consolidatedSample, null, 2), "ping", "error");
             this.dataFunc(consolidatedSample);
           } else {
@@ -134,7 +149,7 @@ class Ping {
     }, 30 * 1000);
   }
 
-  stopSendPingSample() {
+  stopSendSample() {
     if (this.ping_interval) {
       clearInterval(this.ping_interval);
       this.ping_interval = null;
@@ -184,7 +199,8 @@ class Ping {
         this.exec.kill(9);
       }, this.durationSeconds * 1000);
 
-    this.startSendPingSample();
+    this.startSendSample();
+    if (this.cpuMon) this.cpuMon.startSendSample();
     if (this.netrate) this.netrate.startSendSample();
     if (this.netrate_saves) this.netrate_saves.startSendSample();
 
@@ -222,8 +238,9 @@ class Ping {
     this.exec.on("exit", code => {
       log(`Ping exited with code ${code}`, "ping", "info");
 
-      this.stopSendPingSample();
-      if (this.netyrate) this.netrate.stopSendSample();
+      this.stopSendSample();
+      if (this.cpuMon) this.stopSendSample();
+      if (this.netrate) this.netrate.stopSendSample();
 
       if (code !== 0 && this.durationSeconds === 0 && !this.cancelled) {
         // restart.
@@ -282,6 +299,11 @@ class Ping {
     }
   }
  
+  // cpumon
+  cpuMonDataFunc(data) {
+    this.cur_cpumon_result = data;
+  }
+
   // netrate
   netrateDataFunc(data) {
     this.cur_netrate_result = data;
