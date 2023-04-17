@@ -34,6 +34,8 @@ let logfilePath = null;
 let logFilenameBase = null;
 
 let defaultLevel = "verbose";
+let logLevelVerbose = true;
+
 const fileRetentionDays = 14 * 24 * 60 * 60 * 1000;
 
 function logInit(logfilePath_, logFilenameBase_) {
@@ -322,6 +324,7 @@ function setLogLevel(logLevel) {
   if (newLevel != defaultLevel) {
     console.log("...oldLevel = " + defaultLevel + ", newLevel = " + newLevel);
     defaultLevel = newLevel;
+    logLevelVerbose = defaultLevel === "verbose";
     for (
       let i = 0;
       i < global._8fb20139_fb80_458d_bca5_25310e0c68ec_logger.transports.length;
@@ -338,8 +341,8 @@ function getLogDir() {
   return logfilePath;
 }
 
-function getLogLevel() {
-  return defaultLevel;
+function getLogLevelVerbose() {
+  return logLevelVerbose;
 }
 
 function getLogPath() {
@@ -348,7 +351,7 @@ function getLogPath() {
 
 module.exports = {
   getLogDir,
-  getLogLevel,
+  getLogLevelVerbose,
   getLogPath,
   log,
   logInit,
