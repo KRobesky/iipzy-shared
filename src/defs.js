@@ -69,16 +69,16 @@ module.exports = {
   ipcPingPlotData: "ipc_024",
   ipcPingPlotWindowButtonHome: "ipc_025",
   ipcPingPlotWindowButtonLeft: "ipc_026",
-  ipcPingPlotWindowButtonLeftDropped: "ipc_027",
+  ipcPingPlotWindowButtonLeftMarked: "ipc_027",
   ipcPingPlotWindowButtonRight: "ipc_028",
-  ipcPingPlotWindowButtonRightDropped: "ipc_029",
+  ipcPingPlotWindowButtonRightMarked: "ipc_029",
   ipcPingPlotWindowButtonZoomChange: "ipc_030",
   ipcPingPlotWindowMount: "ipc_031",
   ipcPingPlotWindowButtonHomeEx: "ipc_114",
   ipcPingPlotWindowButtonLeftEx: "ipc_115",
-  ipcPingPlotWindowButtonLeftDroppedEx: "ipc_116",
+  ipcPingPlotWindowButtonLeftMarkedEx: "ipc_116",
   ipcPingPlotWindowButtonRightEx: "ipc_117",
-  ipcPingPlotWindowButtonRightDroppedEx: "ipc_118",
+  ipcPingPlotWindowButtonRightMarkedEx: "ipc_118",
   ipcPingPlotWindowButtonZoomChangeEx: "ipc_119",
   ipcPingPlotWindowMountEx: "ipc_120",
   ipcQuit: "ipc_067",
@@ -195,6 +195,11 @@ module.exports = {
   statusInvalidDownloadClient: 10029,
   statusUserNotInWhiteList: 10030,
   statusIperf3ServerFailed: 10031,
+
+  // ping mark - bit mask
+  pingMarkNormal: 0,
+  pingMarkDropped: 1,
+  pingMarkSaved: 2,
 
   // -- events
   // objectType

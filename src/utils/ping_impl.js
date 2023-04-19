@@ -1,5 +1,6 @@
 const { spawn } = require("child_process");
 
+const Defs = require("../defs");
 const { log } = require("./logFile");
 const CpuMon = require("./cpuMon");
 const {NetRate, NetRateIPTables, NetRateSaves} = require("./netrate");
@@ -7,6 +8,7 @@ const { spawnAsync } = require("./spawnAsync");
 const { sleep } = require("./utils");
 
 let doSimulateDroppedPackets = false;
+let doSimulateSaves = false;
 
 class Ping {
   constructor(title, dataFunc, doneFunc, target, durationSeconds, intervalSeconds, wantNetRate, tcMode) {
@@ -90,7 +92,7 @@ class Ping {
             if (this.dropCheckEnabled && now > this.latestPingTime + 10 * 1000) {
               log("ping.sendPingSample: no new ping sample for 10 seconds", "ping", "info");
               this.cur_ping_sample.timeMillis = "0";
-              this.cur_ping_sample.dropped = true;
+              this.cur_ping_sample.status = Defs.pingStatusDropped;
             }
           }
           //log("ping.sendPingSample: cur_netrate_result = " + JSON.stringify(this.cur_netrate_result));
@@ -122,7 +124,8 @@ class Ping {
             consolidatedSample.tx_rate_dns_bits = this.cur_netrate_result.tx_rate_dns_bits;
             consolidatedSample.tx_rate_rt_bits = this.cur_netrate_result.tx_rate_rt_bits;
             // NetRateTC
-            consolidatedSample.saved = this.cur_netrate_saves_result.saved;   
+            if (this.cur_netrate_saves_result.saved || doSimulateSaves)
+              consolidatedSample.mark |= Defs.pingMarkSaved;   
             // CpuMon
             consolidatedSample.temp_celsius    = this.cur_cpumon_result.temp_celsius;
             consolidatedSample.cpu_utlz_user   = this.cur_cpumon_result.cpu_utlz_user;  
@@ -171,14 +174,14 @@ class Ping {
         const time = str.substring(left, right);
         this.totalSamples++;
         this.totalTimeMillis += Number(time);
-        return { timeMillis: time, dropped: false };
+        return { timeMillis: time, mark: Defs.pingMarkNormal };
       }
     } else if (
       str.startsWith("Request timed out") ||
       str.indexOf("Destination Host Unreachable") !== -1
     ) {
       this.totalDroppedPackets++;
-      return { timeMillis: "0", dropped: true };
+      return { timeMillis: "0", mark: Defs.pingMarkDropped };
 
     }
     return {};
@@ -220,7 +223,7 @@ class Ping {
         if (newSample.timeMillis !== undefined) this.cur_ping_sample = newSample;
       } else {
         this.totalDroppedPackets++;
-        this.cur_ping_sample = { timeMillis: "0", dropped: true };
+        this.cur_ping_sample = { timeMillis: "0", mark: Defs.pingMarkDropped };
         // '{"timeMillis":' +
         // 0 +
         // ',"dropped":true, "timeStamp": "' +
@@ -330,6 +333,16 @@ class Ping {
     doSimulateDroppedPackets = state;
     log("Ping setSimulateDroppedPackets: state = " + doSimulateDroppedPackets, "ping", "info");
     return doSimulateDroppedPackets;
+  }
+  getSimulateSaves() {
+    log("Ping getSimulateSaves: state = " + doSimulateSaves, "ping", "info");
+    return doSimulateSaves;
+  }
+
+  setSimulateSaves(state) {
+    doSimulateSaves = state;
+    log("Ping setSimulateSaves: state = " + doSimulateSaves, "ping", "info");
+    return doSimulateSaves;
   }
 }
 
