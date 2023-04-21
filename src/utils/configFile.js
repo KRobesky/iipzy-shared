@@ -1,11 +1,13 @@
-const fs = require("fs");
-const lockfile = require("proper-lockfile");
-var { Mutex } = require("async-mutex");
+//const fs = require("fs");
+//const lockfile = require("proper-lockfile");
+//var { Mutex } = require("async-mutex");
+const { createClient } = require('redis');
 const path = require("path");
 
 const Defs = require("../defs");
 const { log } = require("./logFile");
 const { fileWatch } = require("./fileWatch");
+const { sleep } = require("./utils");
 
 const {
   fileDeleteAsync,
@@ -28,17 +30,23 @@ class ConfigFile {
   //     windowBounds: { width: 800, height: 600 }
   //   }
   // });
-  constructor(userDataPath, configFilename) {
+  constructor(userDataPath, configFilename, master) {
     this.path = path.join(userDataPath, configFilename + ".json");
     log("configFile.constructor: path=" + this.path, "cfg", "info");
 
-    this.lockFile = this.path + ".lock";
+    this.configFilename = configFilename;
+    this.master = master;
+
+    this.redis_client = null;
+    this.redis_subscriber = null;
+
+    //this.lockFile = this.path + ".lock";
 
     this.data = {};
 
     this.configWatchCallbacks = [];
 
-    this.mutex = new Mutex();
+    //this.mutex = new Mutex();
 
     configFileMap.set(configFilename, this);
   }
@@ -46,88 +54,106 @@ class ConfigFile {
   async init() {
     log(">>>ConfigFile.init", "cfg", "info");
 
-    if (!(await fileExistsAsync(this.lockFile))) {
-      // create the LOCK file.
-      log("ConfigFile.constructor - new LOCK file", "cfg", "info");
-      await fileWriteAsync(this.lockFile, "{}");
-    }
+    this.redis_client = createClient();
+    this.redis_client.connect();
 
-    let exists = false;
-
-    await lockfile
-      .lock(this.lockFile)
-      .then(async release => {
-        log("...>>>lock - init - acquiring lock", "cfg", "info");
-        exists = await fileExistsAsync(this.path);
-        if (exists) {
-          try {
-            this.data = JSON.parse(await fileReadAsync(this.path));
-            if (this.data) {
-              log(
-                "ConfigFile.init - after read: " +
-                  JSON.stringify(this.data, null, 2),
-                "cfg",
-                "info"
-              );
-              exists = true;
-            } else {
-              log("ConfigFile.init - empty file", "cfg", "info");
-              await fileWriteAsync(this.path, "{}");
-            }
-          } catch (ex) {
-            log("(Exception) ConfigFile.init: " + ex, "cfg", "error");
-            await fileDeleteAsync(this.path);
-            log("ConfigFile.init - new file", "cfg", "info");
+    if (this.master) {
+      if (fileExistsAsync(this.path)) {
+        try {
+          this.data = JSON.parse(await fileReadAsync(this.path));
+          if (this.data) {
+            log(
+              "ConfigFile.init - after read: " +
+                JSON.stringify(this.data, null, 2),
+              "cfg",
+              "info"
+            );
+          } else {
+            log("ConfigFile.init - empty file", "cfg", "info");
             await fileWriteAsync(this.path, "{}");
           }
-        } else {
-          // create the file.
+        } catch (ex) {
+          log("(Exception) ConfigFile.init: " + ex, "cfg", "error");
+          await fileDeleteAsync(this.path);
           log("ConfigFile.init - new file", "cfg", "info");
           await fileWriteAsync(this.path, "{}");
         }
-        log("...<<<lock - init - releasing lock", "cfg", "info");
-        return release();
-      })
-      .catch(ex => {
-        // either lock could not be acquired
-        // or releasing it failed
-        log("(Exception) init lockfile.lock: " + ex, "cfg", "error");
-      });
-
-    fileWatch(this.path, async path => {
-      log("...ConfigFile.fileWatch: path = " + path, "cfg", "info");
-      if (this.path === path) {
-        //this.data = JSON.parse(await fileReadAsync(this.path));
-        await this.read_helper();
-        // call watchers.
-        for (let i = 0; i < this.configWatchCallbacks.length; i++) {
-          const callback = this.configWatchCallbacks[i];
-          callback();
-        }
+      } else {
+        // create the file.
+        log("ConfigFile.init - new file", "cfg", "info");
+        this.data = {};
+        await fileWriteAsync(this.path, this.data);
       }
-    });
+      // write to redis
+      await this.redis_client.publish(this.configFilename, this.jsonObjectToQuotedString(this.data));
+    } else {
+      // wait forever for config file to exist
+      while (true) {
+        if (await fileExistsAsync(this.path)) break;
+        await sleep(1000);
+      }
+
+    }
+
+    setupRedisSubscriber();
+
+    if (this.master) {
+      fileWatch(this.path, async path => {
+        log("ConfigFile.init.fileWatch: path = " + path, "cfg", "info");
+        if (this.path === path) {
+          //this.data = JSON.parse(await fileReadAsync(this.path));
+          await this.read_helper();
+          // call watchers.
+          for (let i = 0; i < this.configWatchCallbacks.length; i++) {
+            const callback = this.configWatchCallbacks[i];
+            callback();
+          }
+        }
+      });
+    }
+
+    const sub
 
     log("<<<ConfigFile.init", "cfg", "info");
 
     return exists;
   }
 
+  jsonObjectToQuotedString(jo) {
+    const json = JSON.stringify(jo);
+    return json.replace("\"", "\\\"");
+  }
+  
+  jsonObjectFromQuotedString(qs) {
+    const json = qs.replace("\\\"", "\"");
+    return JSON.parse(json);
+  }
+
+  async setupRedisSubscriber() {
+    try {
+    this.redis_subscriber = this.redis_client.duplicate();
+    this.redis_subscriber.connect();
+    this.redis_subscriber.on(this.configFilename, this.redisSubscriberHandler.bind(this));
+    } catch(ex) {
+      log("(Exception) ConfigFile.setupRedisSubscriber: " + ex, "cfg", "error");
+    }
+  }
+
+  redisSubscriberHandler(data) {
+    log("ConfigFile.redisSubscriberHandler: data = " + data, "cfg", "info");
+  }
+
+  async watchRedis() {
+    //const value = await client.get(this.configFilename);
+    //??log("ConfigFile.init.watchRedis: value = " + value, "cfg", "info");
+  }
+
   async read_helper() {
-    await lockfile
-      .lock(this.lockFile)
-      .then(async release => {
-        log("...>>>lock - read_helper - acquiring lock", "cfg", "info");
-        await this.mutex.runExclusive(async () => {
-          this.data = JSON.parse(await fileReadAsync(this.path));
-        });
-        log("...<<<lock - read_helper - releasing lock", "cfg", "info");
-        return release();
-      })
-      .catch(ex => {
-        // either lock could not be acquired
-        // or releasing it failed
-        log("(Exception) read_helper lockfile.lock: " + ex, "cfg", "error");
-      });
+    try {
+      this.data = JSON.parse(await fileReadAsync(this.path));
+    } catch(ex) {
+      log("(Exception) ConfigFile.read_helper: " + ex, "cfg", "error");
+    }
   }
 
   watch(callback) {
@@ -147,43 +173,21 @@ class ConfigFile {
 
   // set property
   async set(key, val) {
-    log(
-      "...>>>set, key=" + key + ", val='" + JSON.stringify(val, null, 2) + "'",
-      "cfg",
-      "info"
-    );
-    await lockfile
-      .lock(this.lockFile)
-      .then(async release => {
-        log("...>>>lock - set - acquiring lock", "cfg", "info");
-        await this.mutex.runExclusive(async () => {
-          await this.set_helper(key, val);
-        });
-        log("...<<<lock - set - releasing lock", "cfg", "info");
-        return release();
-      })
-      .catch(ex => {
-        // either lock could not be acquired
-        // or releasing it failed
-        log("(Exception) set lockfile.lock: " + ex, "cfg", "error");
-      });
+    log("...>>>set, key=" + key + ", val='" + JSON.stringify(val, null, 2) + "'", "cfg", "info");
+    await this.set_helper(key, val);
     log("...<<<set", "cfg", "info");
   }
 
   async set_helper(key, val) {
-    log(
-      "...>>>set_helper, key=" +
-        key +
-        ", val='" +
-        JSON.stringify(val, null, 2) +
-        "'",
-      "cfg",
-      "info"
-    );
+    log("...>>>set_helper, key=" + key + ", val='" + JSON.stringify(val, null, 2) + "'", "cfg", "info");
     const valPrev = this.data[key];
     if (val !== valPrev) {
       this.data[key] = val;
-      await fileWriteAsync(this.path, JSON.stringify(this.data, null, 2));
+      if (this.master) {
+        await fileWriteAsync(this.path, JSON.stringify(this.data, null, 2));
+      } else {
+        await client.publish(this.configFilename, this.jsonObjectToQuotedString(this.data));
+      }
       //await this.writeConfigFile(this.data);
     }
     log("...<<<set_helper", "cfg", "info");
