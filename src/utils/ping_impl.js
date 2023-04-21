@@ -3,7 +3,7 @@ const { spawn } = require("child_process");
 const Defs = require("../defs");
 const { log } = require("./logFile");
 const CpuMon = require("./cpuMon");
-const {NetRate, NetRateIPTables, NetRateSaves} = require("./netrate");
+const { NetRate, NetRateBandwidth, NetRateIPTables, NetRateSaves } = require("./netrate");
 const { spawnAsync } = require("./spawnAsync");
 const { sleep } = require("./utils");
 
@@ -31,11 +31,13 @@ class Ping {
     this.intervalSeconds = intervalSeconds ? intervalSeconds : 1;
     this.cpuMon = null;
     this.netrate = null;
+    this.netrate_bandwidth = null;
     this.netrate_saves = null;
     if (this.dataFunc) {
       if (wantNetRate) {
         this.netrate = tcMode ? new NetRateIPTables(title, this.intervalSeconds, this.netrateDataFunc.bind(this)) : 
                                 new NetRate(title, this.intervalSeconds, this.netrateDataFunc.bind(this));
+        if (tcMode) this.netrate_bandwidth = new NetRateBandwidth(title, 60, this.netrateBandwidthDataFunc.bind(this))
         this.netrate_saves = tcMode ? new NetRateSaves(title, "eth0", "eth1", this.intervalSeconds * 6, this.netrateSavesDataFunc.bind(this)) : null;
       }
       this.cpuMon = new CpuMon(title, 30, this.cpuMonDataFunc.bind(this));
@@ -57,6 +59,7 @@ class Ping {
 
     // netrate
     this.cur_netrate_result = {};
+    this.cur_netrate_bandwidth_result = {};
     this.cur_netrate_saves_result = {};
 
     // cpumon
@@ -123,6 +126,11 @@ class Ping {
             consolidatedSample.rx_rate_rt_bits = this.cur_netrate_result.rx_rate_rt_bits;
             consolidatedSample.tx_rate_dns_bits = this.cur_netrate_result.tx_rate_dns_bits;
             consolidatedSample.tx_rate_rt_bits = this.cur_netrate_result.tx_rate_rt_bits;
+            // NetRateBandwidth
+            consolidatedSample.rx_bw_peak_bits		= this.cur_netrate_bandwidth_result.rx_bw_peak_bits;
+            consolidatedSample.rx_bw_quality_bits	= this.cur_netrate_bandwidth_result.rx_bw_quality_bits;
+            consolidatedSample.tx_bw_peak_bits		= this.cur_netrate_bandwidth_result.tx_bw_peak_bits;
+            consolidatedSample.tx_bw_quality_bits	= this.cur_netrate_bandwidth_result.tx_bw_quality_bits;
             // NetRateTC
             if (this.cur_netrate_saves_result.saved || doSimulateSaves)
               consolidatedSample.mark |= Defs.pingMarkSaved;   
@@ -161,6 +169,10 @@ class Ping {
       clearTimeout(this.timeout);
       this.timeout = null;
     }
+    if (this.cpuMon) this.cpuMon.stopSendSample();
+    if (this.netrate) this.netrate.stopSendSample();
+    if (this.netrate_bandwidth) this.netrate_bandwidth.stopSendSample();
+    if (this.netrate_saves) this.netrate_saves.stopSendSample();
   }
 
   parsePingLineLinux(str) {
@@ -205,6 +217,7 @@ class Ping {
     this.startSendSample();
     if (this.cpuMon) this.cpuMon.startSendSample();
     if (this.netrate) this.netrate.startSendSample();
+    if (this.netrate_bandwidth) this.netrate_bandwidth.startSendSample();
     if (this.netrate_saves) this.netrate_saves.startSendSample();
 
     this.exec.stdout.on("data", data => {
@@ -310,6 +323,11 @@ class Ping {
   // netrate
   netrateDataFunc(data) {
     this.cur_netrate_result = data;
+  }
+
+  // netrateBandwidth
+  netrateBandwidthDataFunc(data) {
+    this.cur_netrate_bandwidth_result = data;
   }
 
   // netrateSaves

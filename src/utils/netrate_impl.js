@@ -1,5 +1,6 @@
 const { spawn } = require("child_process");
 
+const { fileReadAsync } = require("./fileIO");
 const { log } = require("./logFile");
 const { sleep } = require("./utils");
 const { spawnAsync } = require("./spawnAsync");
@@ -143,6 +144,89 @@ class NetRate {
       //log(`NetRate exited with code ${code}`, "nrat", "info");
     });  
   }
+}
+
+class NetRateBandwidth {
+  constructor(title, intervalSeconds, dataFunc) {
+    log("NetRateBandwidth.constructor: title = " + title + ", intervalSeconds = " + intervalSeconds, "nrat", "info");
+    this.title = title;
+    this.intervalSeconds = intervalSeconds;
+    this.dataFunc = dataFunc;
+      
+    this.cancelled = false;
+
+    // netrate
+    this.interval = null;
+    this.first_time = true;
+
+    // state file names.
+    this.STATE_PATH = "/etc/iipzy/";
+    this.state_filename_receive = this.STATE_PATH + "bandwidth_receive.json";
+    this.state_filename_transmit = this.STATE_PATH + "bandwidth_transmit.json";
+  }
+
+  initResult() {
+    return {
+      sample_time : Date.now(),
+      rx_bw_peak_bits : parseInt(0),
+      rx_bw_quality_bits : parseInt(0),
+      tx_bw_peak_bits : parseInt(0),
+      tx_bw_quality_bits : parseInt(0),
+    }
+  }
+
+  startSendSample() {
+    this.get_bandwidth();
+    this.interval = setInterval(() => {
+      this.get_bandwidth(); 
+    }, this.intervalSeconds * 1000); 
+  }
+
+  stopSendSample() {
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+  }
+
+  async readBandwidthFile(filename) {
+    let bw_peak_bits = null;
+    let bw_quality_bits = null;
+    try {
+      const data = await fileReadAsync(filename);
+      let joData = null;
+      if (data) {
+        joData = JSON.parse(data);
+        bw_peak_bits = joData.transmitCapacity;
+        bw_quality_bits = joData.bandwidthLowerBound;
+
+      }
+    } catch (ex) {
+      log("(Exception) NetRateBandwidth.readBandwidthFile: " + ex, "nrat", "info");
+    }
+    return { bw_peak_bits, bw_quality_bits };
+	}
+
+  async get_bandwidth() {   
+    try {
+      let result = this.initResult();
+      {
+        const { bw_peak_bits, bw_quality_bits  } = await this.readBandwidthFile(this.state_filename_receive);
+        result.rx_bw_peak_bits		= bw_peak_bits;
+        result.rx_bw_quality_bits	= bw_quality_bits;
+      }
+      {
+        const { bw_peak_bits, bw_quality_bits  } = await this.readBandwidthFile(this.state_filename_transmit);
+        result.tx_bw_peak_bits		= bw_peak_bits;
+        result.tx_bw_quality_bits	= bw_quality_bits;
+      }
+
+      this.dataFunc(result);
+     
+    } catch (ex) {
+      log("(Exception) NetRateBandwidth.get_bandwidth: " + ex, "nrat", "info");
+    }
+  }  
 }
 
 class NetRateIPTables {
@@ -289,7 +373,6 @@ class NetRateIPTables {
     }
   }  
 }
-
 
 class NetRateSaves {
   constructor(title, intfWAN, intfLAN, intervalSeconds, dataFunc) {
@@ -542,4 +625,4 @@ class NetRateSaves {
   } 
 }
 
-module.exports = {NetRate, NetRateIPTables, NetRateSaves};
+module.exports = {NetRate, NetRateBandwidth, NetRateIPTables, NetRateSaves};

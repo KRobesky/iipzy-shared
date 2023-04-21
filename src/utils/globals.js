@@ -1,15 +1,13 @@
-const { log } = require("./logFile");
-
-let os_id = '';
-
-function get_os_id() {
-    return os_id;
-}
-function set_os_id(os_id_param) {
-  os_id = os_id_param;
-}
+const { 
+  get_is_debugging,
+  set_is_debugging,
+  get_os_id, 
+  set_os_id 
+} = require("./globals_impl");
 
 module.exports = { 
-    get_os_id, 
-    set_os_id 
+  get_is_debugging,
+  set_is_debugging,
+  get_os_id, 
+  set_os_id 
 };
