@@ -78,8 +78,12 @@ class ConfigFile {
         this.redisUpdateHandler(message);
       });
 
-      const redis_data = JSON.parse(await this.redis_client.get(this.REDIS_KEY_CONFIG));
-      log("ConfigFile.init - redis_data " + JSON.stringify(redis_data, null, 2), "cfg", "info");
+      let redis_data = null;
+      const redis_raw = await this.redis_client.get(this.REDIS_KEY_CONFIG);
+      if (redis_raw) {
+        redis_data = JSON.parse(redis_raw);
+        log("ConfigFile.init - redis_data " + JSON.stringify(redis_data, null, 2), "cfg", "info");
+      }
 
       if (this.master) {
         exists = fileExistsAsync(this.path);
@@ -166,6 +170,7 @@ class ConfigFile {
     try {
       if (!this.master) {
         this.data = JSON.parse(await this.redis_client.get(this.REDIS_KEY_CONFIG));
+        log("ConfigFile.redisUpdateHandler: data = " + JSON.stringify(this.data), "cfg", "info");
       }
       // call watchers.
       for (let i = 0; i < this.configWatchCallbacks.length; i++) {
@@ -207,7 +212,7 @@ class ConfigFile {
   get(key) {
     try {
       const val = this.data[key];
-      log("confile.get, key=" + key + ", val=" + val, "cfg", "info");
+      log("configFile.get, key=" + key + ", val=" + val, "cfg", "info");
       return val;
     } catch (ex) {
       log("(Exception) ConfigFile.get: " + ex, "cfg", "error");
@@ -217,17 +222,17 @@ class ConfigFile {
 
   // set property
   async set(key, val) {
-    log("...>>>set, key=" + key + ", val='" + JSON.stringify(val, null, 2) + "'", "cfg", "info");
+    log("ConfigFile.set, key=" + key + ", val='" + JSON.stringify(val, null, 2) + "'", "cfg", "info");
     try {
       await this.set_helper(key, val);
     } catch (ex) {
       log("(Exception) ConfigFile.set: " + ex, "cfg", "error");
     }
-    log("...<<<set", "cfg", "info");
+    //log("...<<<set", "cfg", "info");
   }
 
   async set_helper(key, val) {
-    log("...>>>set_helper, key=" + key + ", val='" + JSON.stringify(val, null, 2) + "'", "cfg", "info");
+    log("ConfigFile.set_helper, key=" + key + ", val='" + JSON.stringify(val, null, 2) + "'", "cfg", "info");
     const valPrev = this.data[key];
     if (val !== valPrev) {
       this.data[key] = val;
@@ -239,7 +244,7 @@ class ConfigFile {
       }
       //await this.writeConfigFile(this.data);
     }
-    log("...<<<set_helper", "cfg", "info");
+    //log("...<<<set_helper", "cfg", "info");
   }
 }
 
