@@ -59,6 +59,8 @@ class ConfigFile {
 
     this.configWatchCallbacks = [];
 
+    this.ready = false;
+
     //this.mutex = new Mutex();
 
     configFileMap.set(configFilename, this);
@@ -89,8 +91,10 @@ class ConfigFile {
         exists = fileExistsAsync(this.path);
         if (exists) {
           try {
-            this.data = JSON.parse(await fileReadAsync(this.path));
-            if (this.data) {
+            const data_raw = await fileReadAsync(this.path);
+            log("ConfigFile.init - data_raw: " + data_raw, "cfg", "info");
+            if (data_raw) {
+              this.data = JSON.parse(data_raw);
               log("ConfigFile.init - this.data: " + JSON.stringify(this.data, null, 2), "cfg", "info");
               if (!this.data.ts) {
                 this.data.ts = Date.now();
@@ -122,6 +126,7 @@ class ConfigFile {
         await this.redis_client.publish(this.REDIS_PUBSUB_UPDATE_CHANNEL, 'update');
         log("ConfigFile.init AFTER PUBLISH", "cfg", "info");
 
+        // enable "set"
         this.redis_set_subscriber = this.redis_client.duplicate();
         await this.redis_set_subscriber.connect();
         await this.redis_set_subscriber.subscribe(this.REDIS_PUBSUB_SET_CHANNEL, (message) => {
@@ -159,6 +164,8 @@ class ConfigFile {
     } catch(ex) {
       log("(Exception) ConfigFile.init: " + ex, "cfg", "error");
     }
+    
+    this.ready = true;
 
     log("<<<ConfigFile.init", "cfg", "info");
 
@@ -185,8 +192,10 @@ class ConfigFile {
   async redisSetHandler(message) {
     log("ConfigFile.redisSetHandler: message = " + message, "cfg", "info");
     try {
-      const jo = JSON.parse(message);
-      await this.set(jo.key, jo.val);
+      if (this.ready) {
+        const jo = JSON.parse(message);
+        await this.set(jo.key, jo.val);
+      }
     } catch(ex) {
       log("(Exception) ConfigFile.redisSetHandler: " + ex, "cfg", "error");
     }
