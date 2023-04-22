@@ -19,6 +19,14 @@ const {
 let configFile = null;
 const configFileMap = new Map();
 
+/*
+  Only the Master reads/writes file
+  Only the Master does redis.set()
+  Redis persists across reboots
+  File has timestamp field to resolve redis vs file contents
+  File having a missing or empty timestamp takes presidence over redis
+*/
+
 class ConfigFile {
   // usage:
   // const configFile = new ConfigFile()
@@ -32,13 +40,18 @@ class ConfigFile {
   // });
   constructor(userDataPath, configFilename, master) {
     this.path = path.join(userDataPath, configFilename + ".json");
-    log("configFile.constructor: path=" + this.path, "cfg", "info");
+    log("configFile.constructor: path=" + this.path + ", filename = " + configFilename + ", master = " + master, "cfg", "info");
 
     this.configFilename = configFilename;
     this.master = master;
 
     this.redis_client = null;
-    this.redis_subscriber = null;
+    this.redis_update_subscriber = null;
+    this.redis_set_subscriber = null;
+
+    this.REDIS_PUBSUB_UPDATE_CHANNEL = "config-update";
+    this.REDIS_PUBSUB_SET_CHANNEL = "config-set";
+    this.REDIS_KEY_CONFIG = "config";
 
     //this.lockFile = this.path + ".lock";
 
@@ -54,98 +67,124 @@ class ConfigFile {
   async init() {
     log(">>>ConfigFile.init", "cfg", "info");
 
-    this.redis_client = createClient();
-    this.redis_client.connect();
+    let exists = false;
 
-    if (this.master) {
-      if (fileExistsAsync(this.path)) {
-        try {
-          this.data = JSON.parse(await fileReadAsync(this.path));
-          if (this.data) {
-            log(
-              "ConfigFile.init - after read: " +
-                JSON.stringify(this.data, null, 2),
-              "cfg",
-              "info"
-            );
-          } else {
-            log("ConfigFile.init - empty file", "cfg", "info");
-            await fileWriteAsync(this.path, "{}");
-          }
-        } catch (ex) {
-          log("(Exception) ConfigFile.init: " + ex, "cfg", "error");
-          await fileDeleteAsync(this.path);
-          log("ConfigFile.init - new file", "cfg", "info");
-          await fileWriteAsync(this.path, "{}");
-        }
-      } else {
-        // create the file.
-        log("ConfigFile.init - new file", "cfg", "info");
-        this.data = {};
-        await fileWriteAsync(this.path, this.data);
-      }
-      // write to redis
-      await this.redis_client.publish(this.configFilename, this.jsonObjectToQuotedString(this.data));
-    } else {
-      // wait forever for config file to exist
-      while (true) {
-        if (await fileExistsAsync(this.path)) break;
-        await sleep(1000);
-      }
-
-    }
-
-    setupRedisSubscriber();
-
-    if (this.master) {
-      fileWatch(this.path, async path => {
-        log("ConfigFile.init.fileWatch: path = " + path, "cfg", "info");
-        if (this.path === path) {
-          //this.data = JSON.parse(await fileReadAsync(this.path));
-          await this.read_helper();
-          // call watchers.
-          for (let i = 0; i < this.configWatchCallbacks.length; i++) {
-            const callback = this.configWatchCallbacks[i];
-            callback();
-          }
-        }
+    try {
+      this.redis_client = createClient();
+      await this.redis_client.connect();
+      this.redis_update_subscriber = this.redis_client.duplicate();
+      await this.redis_update_subscriber.connect();
+      await this.redis_update_subscriber.subscribe(this.REDIS_PUBSUB_UPDATE_CHANNEL, (message) => {
+        this.redisUpdateHandler(message);
       });
-    }
 
-    const sub
+      const redis_data = JSON.parse(await this.redis_client.get(this.REDIS_KEY_CONFIG));
+      log("ConfigFile.init - redis_data " + JSON.stringify(redis_data, null, 2), "cfg", "info");
+
+      if (this.master) {
+        exists = fileExistsAsync(this.path);
+        if (exists) {
+          try {
+            this.data = JSON.parse(await fileReadAsync(this.path));
+            if (this.data) {
+              log("ConfigFile.init - this.data: " + JSON.stringify(this.data, null, 2), "cfg", "info");
+              if (!this.data.ts) {
+                this.data.ts = Date.now();
+                await fileWriteAsync(this.path, JSON.stringify(this.data, null, 2));
+              } else if (redis_data && redis_data.ts > this.data.ts) {
+                this.data = redis_data;
+                await fileWriteAsync(this.path, JSON.stringify(this.data, null, 2));
+              } 
+            } else {
+              log("ConfigFile.init - empty file", "cfg", "info");
+              this.data = { ts: Date.now() };
+              await fileWriteAsync(this.path, JSON.stringify(this.data, null, 2));
+             }
+          } catch (ex) {
+            log("(Exception) ConfigFile.init: " + ex, "cfg", "error");
+            await fileDeleteAsync(this.path);
+            log("ConfigFile.init - new file", "cfg", "info");
+            this.data = { ts: Date.now() };
+            await fileWriteAsync(this.path, JSON.stringify(this.data, null, 2));
+          }
+        } else {
+          // create the file.
+          log("ConfigFile.init - new file", "cfg", "info");
+          this.data = { ts: Date.now() };
+          await fileWriteAsync(this.path, JSON.stringify(this.data, null, 2));
+        }
+        // write to redis
+        await this.redis_client.set(this.REDIS_KEY_CONFIG, JSON.stringify(this.data))
+        await this.redis_client.publish(this.REDIS_PUBSUB_UPDATE_CHANNEL, 'update');
+        log("ConfigFile.init AFTER PUBLISH", "cfg", "info");
+
+        this.redis_set_subscriber = this.redis_client.duplicate();
+        await this.redis_set_subscriber.connect();
+        await this.redis_set_subscriber.subscribe(this.REDIS_PUBSUB_SET_CHANNEL, (message) => {
+          this.redisSetHandler(message);
+        });
+      } else {
+        // not master
+        if (redis_data) {
+          this.data = redis.data;
+        } else {
+          // wait forever for config data
+          while (true) {
+            const redis_data = JSON.parse(await this.redis_client.get(this.REDIS_KEY_CONFIG));
+            log("ConfigFile.init - redis_data.2 " + JSON.stringify(redis_data, null, 2), "cfg", "info");
+            if (redis_data) {
+              this.data = redis_data;
+              break;
+            }
+            await sleep(1000);
+          }
+        }
+      }
+
+      if (this.master) {
+        fileWatch(this.path, async path => {
+          log("ConfigFile.init.fileWatch: path = " + path, "cfg", "info");
+          if (this.path === path) {
+            // write to redis
+            await this.read_helper();
+            await this.redis_client.set(this.REDIS_KEY_CONFIG, JSON.stringify(this.data))
+            await this.redis_client.publish(this.REDIS_PUBSUB_UPDATE_CHANNEL, 'update');
+          }
+        });
+      }
+    } catch(ex) {
+      log("(Exception) ConfigFile.init: " + ex, "cfg", "error");
+    }
 
     log("<<<ConfigFile.init", "cfg", "info");
 
     return exists;
   }
 
-  jsonObjectToQuotedString(jo) {
-    const json = JSON.stringify(jo);
-    return json.replace("\"", "\\\"");
-  }
-  
-  jsonObjectFromQuotedString(qs) {
-    const json = qs.replace("\\\"", "\"");
-    return JSON.parse(json);
-  }
-
-  async setupRedisSubscriber() {
+  async redisUpdateHandler(message) {
+    log("ConfigFile.redisUpdateHandler: message = " + message, "cfg", "info");
     try {
-    this.redis_subscriber = this.redis_client.duplicate();
-    this.redis_subscriber.connect();
-    this.redis_subscriber.on(this.configFilename, this.redisSubscriberHandler.bind(this));
+      if (!this.master) {
+        this.data = JSON.parse(await this.redis_client.get(this.REDIS_KEY_CONFIG));
+      }
+      // call watchers.
+      for (let i = 0; i < this.configWatchCallbacks.length; i++) {
+        const callback = this.configWatchCallbacks[i];
+        callback();
+      }   
     } catch(ex) {
-      log("(Exception) ConfigFile.setupRedisSubscriber: " + ex, "cfg", "error");
+      log("(Exception) ConfigFile.redisUpdateHandler: " + ex, "cfg", "error");
     }
   }
 
-  redisSubscriberHandler(data) {
-    log("ConfigFile.redisSubscriberHandler: data = " + data, "cfg", "info");
-  }
-
-  async watchRedis() {
-    //const value = await client.get(this.configFilename);
-    //??log("ConfigFile.init.watchRedis: value = " + value, "cfg", "info");
+  async redisSetHandler(message) {
+    log("ConfigFile.redisSetHandler: message = " + message, "cfg", "info");
+    try {
+      const jo = JSON.parse(message);
+      await this.set(jo.key, jo.val);
+    } catch(ex) {
+      log("(Exception) ConfigFile.redisSetHandler: " + ex, "cfg", "error");
+    }
   }
 
   async read_helper() {
@@ -166,15 +205,24 @@ class ConfigFile {
 
   // get property
   get(key) {
-    const val = this.data[key];
-    log("...get, key=" + key + ", val=" + val, "cfg", "info");
-    return val;
+    try {
+      const val = this.data[key];
+      log("confile.get, key=" + key + ", val=" + val, "cfg", "info");
+      return val;
+    } catch (ex) {
+      log("(Exception) ConfigFile.get: " + ex, "cfg", "error");
+    }
+    return null;
   }
 
   // set property
   async set(key, val) {
     log("...>>>set, key=" + key + ", val='" + JSON.stringify(val, null, 2) + "'", "cfg", "info");
-    await this.set_helper(key, val);
+    try {
+      await this.set_helper(key, val);
+    } catch (ex) {
+      log("(Exception) ConfigFile.set: " + ex, "cfg", "error");
+    }
     log("...<<<set", "cfg", "info");
   }
 
@@ -184,9 +232,10 @@ class ConfigFile {
     if (val !== valPrev) {
       this.data[key] = val;
       if (this.master) {
+        this.data.ts = Date.now();
         await fileWriteAsync(this.path, JSON.stringify(this.data, null, 2));
       } else {
-        await client.publish(this.configFilename, this.jsonObjectToQuotedString(this.data));
+        await this.redis_client.publish(this.REDIS_PUBSUB_SET_CHANNEL, JSON.stringify({ key, val}));
       }
       //await this.writeConfigFile(this.data);
     }
