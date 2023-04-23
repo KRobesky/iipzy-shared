@@ -44,6 +44,7 @@ class Ping {
     }
     
     this.cancelled = false;
+    this.restarting = false;
 
     // ping
     this.exec = null;
@@ -211,14 +212,17 @@ class Ping {
 
     if (this.durationSeconds !== 0)
       setTimeout(() => {
+        this.restarting = false;
         this.exec.kill(9);
       }, this.durationSeconds * 1000);
 
-    this.startSendSample();
-    if (this.cpuMon) this.cpuMon.startSendSample();
-    if (this.netrate) this.netrate.startSendSample();
-    if (this.netrate_bandwidth) this.netrate_bandwidth.startSendSample();
-    if (this.netrate_saves) this.netrate_saves.startSendSample();
+    if (!this.restarting) {
+      this.startSendSample();
+      if (this.cpuMon) this.cpuMon.startSendSample();
+      if (this.netrate) this.netrate.startSendSample();
+      if (this.netrate_bandwidth) this.netrate_bandwidth.startSendSample();
+      if (this.netrate_saves) this.netrate_saves.startSendSample();
+    }
 
     this.exec.stdout.on("data", data => {
       const str = data.toString();
@@ -237,11 +241,6 @@ class Ping {
       } else {
         this.totalDroppedPackets++;
         this.cur_ping_sample = { timeMillis: "0", mark: Defs.pingMarkDropped };
-        // '{"timeMillis":' +
-        // 0 +
-        // ',"dropped":true, "timeStamp": "' +
-        // new Date().toISOString() +
-        // '"}';
       }
 
       this.stdoutLine = "";
@@ -254,28 +253,31 @@ class Ping {
     this.exec.on("exit", code => {
       log(`Ping exited with code ${code}`, "ping", "info");
 
-      this.stopSendSample();
-      if (this.cpuMon) this.stopSendSample();
-      if (this.netrate) this.netrate.stopSendSample();
+      if (!this.restarting) {
+        this.stopSendSample();
+        if (this.cpuMon) this.stopSendSample();
+        if (this.netrate) this.netrate.stopSendSample();
+        if (this.netrate_saves) this.netrate_saves.stopSendSample();
 
-      if (code !== 0 && this.durationSeconds === 0 && !this.cancelled) {
-        // restart.
-        log("Ping restarting in 10 seconds", "ping", "info");
-        setTimeout(() => {
-          this.run();
-        }, 10 * 1000);
-        return;
-      }
+        if (code !== 0 && this.durationSeconds === 0 && !this.cancelled) {
+          // restart.
+          log("Ping restarting in 10 seconds", "ping", "info");
+          setTimeout(() => {
+            this.run();
+          }, 10 * 1000);
+          return;
+        }
 
-      const avgMillis = this.totalSamples === 0 ? 0 : this.totalTimeMillis / this.totalSamples;
+        const avgMillis = this.totalSamples === 0 ? 0 : this.totalTimeMillis / this.totalSamples;
 
-      if (this.doneFunc) {
-        const jo = {
-          avgMillis:      avgMillis,
-          droppedPackets: this.totalDroppedPackets,
-          timeStamp:      Date.now()
-        };
-        this.doneFunc(code, jo);
+        if (this.doneFunc) {
+          const jo = {
+            avgMillis:      avgMillis,
+            droppedPackets: this.totalDroppedPackets,
+            timeStamp:      Date.now()
+          };
+          this.doneFunc(code, jo);
+        }
       }
     });
   }
@@ -335,7 +337,8 @@ class Ping {
     this.cur_netrate_saves_result = data;
   }
 
-  cancel() {
+  cancel(restarting) {
+    this.restarting = (restarting) ? false : true;
     if (this.exec) {
       this.cancelled = true;
       this.exec.kill(9);
@@ -366,9 +369,9 @@ class Ping {
   async setTarget(target) {
     log("Ping setTarget: cur = " + this.target + ", new = " + target, "ping", "info");
     if (target !== this.target) {
-      this.cancel();
+      this.cancel(true);
       this.target = target;
-      this.exec = spawn("ping", [this.target]);
+      this.run();
     }
   }
 }
