@@ -362,6 +362,15 @@ class Ping {
     log("Ping setSimulateSaves: state = " + doSimulateSaves, "ping", "info");
     return doSimulateSaves;
   }
+
+  async setTarget(target) {
+    log("Ping setTarget: cur = " + this.target + ", new = " + target, "ping", "info");
+    if (target !== this.target) {
+      this.cancel();
+      this.target = target;
+      this.exec = spawn("ping", [this.target]);
+    }
+  }
 }
 
 module.exports = Ping;
