@@ -201,6 +201,7 @@ class Ping {
   }
 
   run() {
+    log("Ping.run: target = " + this.target, "ping", "info");
     this.totalSamples = 0;
     this.totalTimeMillis = 0;
     this.totalDroppedPackets = 0;
@@ -346,28 +347,28 @@ class Ping {
   }
 
   getSimulateDroppedPackets() {
-    log("Ping getSimulateDroppedPackets: state = " + doSimulateDroppedPackets, "ping", "info");
+    log("Ping.getSimulateDroppedPackets: state = " + doSimulateDroppedPackets, "ping", "info");
     return doSimulateDroppedPackets;
   }
 
   setSimulateDroppedPackets(state) {
     doSimulateDroppedPackets = state;
-    log("Ping setSimulateDroppedPackets: state = " + doSimulateDroppedPackets, "ping", "info");
+    log("Ping.setSimulateDroppedPackets: state = " + doSimulateDroppedPackets, "ping", "info");
     return doSimulateDroppedPackets;
   }
   getSimulateSaves() {
-    log("Ping getSimulateSaves: state = " + doSimulateSaves, "ping", "info");
+    log("Ping.getSimulateSaves: state = " + doSimulateSaves, "ping", "info");
     return doSimulateSaves;
   }
 
   setSimulateSaves(state) {
     doSimulateSaves = state;
-    log("Ping setSimulateSaves: state = " + doSimulateSaves, "ping", "info");
+    log("Ping.setSimulateSaves: state = " + doSimulateSaves, "ping", "info");
     return doSimulateSaves;
   }
 
   async setTarget(target) {
-    log("Ping setTarget: cur = " + this.target + ", new = " + target, "ping", "info");
+    log("Ping.setTarget: cur = " + this.target + ", new = " + target, "ping", "info");
     if (target !== this.target) {
       this.cancel(true);
       this.target = target;
