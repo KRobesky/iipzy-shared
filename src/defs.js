@@ -7,7 +7,7 @@ module.exports = {
   reqDiscoveryUuid: "24e1c790-20b9-47e9-b4b7-77f15da4e191",
   rspDiscoveryUuid: "9c96377f-ee54-4d39-b4f0-fde43283ac73",
 
-  pingTarget: "google.com",
+  pingTarget: "iipzy.net",
 
   urlAbout: "/about",
   urlAddUser: "/addUser",
