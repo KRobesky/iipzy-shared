@@ -135,7 +135,7 @@ class ConfigFile {
       } else {
         // not master
         if (redis_data) {
-          this.data = redis.data;
+          this.data = redis_data;
         } else {
           // wait forever for config data
           while (true) {
