@@ -7,6 +7,12 @@ module.exports = {
   reqDiscoveryUuid: "24e1c790-20b9-47e9-b4b7-77f15da4e191",
   rspDiscoveryUuid: "9c96377f-ee54-4d39-b4f0-fde43283ac73",
 
+  port_server: "8001",
+  port_sentinel_core: "8002",
+  port_sentinel_web: "8008",
+  port_sentinel_web_server_proxy: "8088",
+  port_sentinel_web_server: "8443",
+
   pingTarget: "iipzy.net",
 
   urlAbout: "/about",
