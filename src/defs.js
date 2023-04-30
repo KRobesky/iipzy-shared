@@ -12,7 +12,6 @@ module.exports = {
   port_sentinel_web: "8008",
   port_sentinel_web_client_proxy: "8004",
   port_sentinel_web_server_proxy: "8088",
-  port_sentinel_web_server: "8443",
   port_sentinel_updater: "8003",
 
   pingTarget: "iipzy.net",
