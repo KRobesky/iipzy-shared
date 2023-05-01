@@ -15,6 +15,9 @@ module.exports = {
   port_sentinel_web_client_proxy: "8004",
   port_traffic_control: "8007",
 
+  server_cert: "/etc/iipzy/certificate/server.cert",
+  server_key: "/etc/iipzy/certificate/server.key",
+
   pingTarget: "google.com",
 
   urlAbout: "/about",
