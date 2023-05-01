@@ -13,8 +13,9 @@ module.exports = {
   port_sentinel_updater: "8003",
   port_sentinel_web: "8008",
   port_sentinel_web_client_proxy: "8004",
+  port_traffic_control: "8007",
 
-  pingTarget: "iipzy.net",
+  pingTarget: "google.com",
 
   urlAbout: "/about",
   urlAddUser: "/addUser",
