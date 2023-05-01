@@ -8,11 +8,12 @@ module.exports = {
   rspDiscoveryUuid: "9c96377f-ee54-4d39-b4f0-fde43283ac73",
 
   port_server: "8001",
+  port_sentinel_admin: "8005",
   port_sentinel_core: "8002",
+  port_sentinel_updater: "8003",
   port_sentinel_web: "8008",
   port_sentinel_web_client_proxy: "8004",
   port_sentinel_web_server_proxy: "8088",
-  port_sentinel_updater: "8003",
 
   pingTarget: "iipzy.net",
 
