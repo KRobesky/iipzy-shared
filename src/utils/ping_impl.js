@@ -29,6 +29,8 @@ class Ping {
     this.target = target;
     this.durationSeconds = durationSeconds ? durationSeconds : 0;
     this.intervalSeconds = intervalSeconds ? intervalSeconds : 1;
+    this.tcMode = tcMode;
+
     this.cpuMon = null;
     this.netrate = null;
     this.netrate_bandwidth = null;
@@ -132,6 +134,9 @@ class Ping {
             consolidatedSample.rx_bw_quality_bits	= this.cur_netrate_bandwidth_result.rx_bw_quality_bits;
             consolidatedSample.tx_bw_peak_bits		= this.cur_netrate_bandwidth_result.tx_bw_peak_bits;
             consolidatedSample.tx_bw_quality_bits	= this.cur_netrate_bandwidth_result.tx_bw_quality_bits;
+            // tcMode
+            if (this.tcMode)
+              consolidatedSample.mark |= Defs.pingMarkTcMode;
             // NetRateTC
             if (this.cur_netrate_saves_result.saved || doSimulateSaves)
               consolidatedSample.mark |= Defs.pingMarkSaved;   

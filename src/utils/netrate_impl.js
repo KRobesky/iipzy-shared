@@ -97,7 +97,12 @@ class NetRate {
           rx_new_dropped : parseInt(0),
           tx_rate_bits : parseInt(0),
           tx_new_errors : parseInt(0),
-          tx_new_dropped : parseInt(0)
+          tx_new_dropped : parseInt(0),
+          // Supply missing NetRateIPTables fields
+          rx_rate_dns_bits : parseInt(0),
+          rx_rate_rt_bits : parseInt(0),
+          tx_rate_dns_bits : parseInt(0),
+          tx_rate_rt_bits : parseInt(0)
         }
        
         // receive (down)
