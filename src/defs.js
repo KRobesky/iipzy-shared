@@ -74,6 +74,7 @@ module.exports = {
   ipcLinkTo: "ipc_014",
   ipcLoginStatus: "ipc_015",
   ipcLoginVerifyStatus: "ipc_157",
+  ipcNavBarInfo: "ipc_176",
   ipcNominalLatencyStatus: "ipc_016",
   ipcNominalLatencyStatusFinal: "ipc_017",
   ipcNoop: "ipc_044",
@@ -118,7 +119,7 @@ module.exports = {
   ipcTickStatusNominalLatency: "ipc_042",
   ipcTimeOfTest: "ipc_043",
   ipcUserAddVerified: "ipc_127",
-  ipcZZZNext: "ipc_176",
+  ipcZZZNext: "ipc_177",
 
   configFilename: "iipzy",
 
