@@ -138,8 +138,10 @@ class Ping {
             if (this.tcMode)
               consolidatedSample.mark |= Defs.pingMarkTcMode;
             // NetRateTC
-            if (this.cur_netrate_saves_result.saved || doSimulateSaves)
-              consolidatedSample.mark |= Defs.pingMarkSaved;   
+            if (this.cur_netrate_saves_result.saved)
+              consolidatedSample.mark |= this.cur_netrate_saves_result.saved;   
+            else if (doSimulateSaves) 
+              consolidatedSample.mark |= Defs.pingMarkSavedRx;
             // CpuMon
             consolidatedSample.temp_celsius    = this.cur_cpumon_result.temp_celsius;
             consolidatedSample.cpu_utlz_user   = this.cur_cpumon_result.cpu_utlz_user;  

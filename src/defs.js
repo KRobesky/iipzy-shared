@@ -212,8 +212,9 @@ module.exports = {
   // ping mark - bit mask
   pingMarkNormal: 0,
   pingMarkDropped: 1,
-  pingMarkSaved: 2,
+  pingMarkSavedRx: 2,
   pingMarkTcMode:4,
+  pingMarkSavedTx: 8,
 
   // -- events
   // objectType
