@@ -71,6 +71,7 @@ module.exports = {
   ipcExiting: "ipc_011",
   ipcIperf3StatusDown: "ipc_012",
   ipcIperf3StatusUp: "ipc_013",
+  ipcIsLocalClient: "ipc_177",
   ipcLinkTo: "ipc_014",
   ipcLoginStatus: "ipc_015",
   ipcLoginVerifyStatus: "ipc_157",
@@ -119,7 +120,7 @@ module.exports = {
   ipcTickStatusNominalLatency: "ipc_042",
   ipcTimeOfTest: "ipc_043",
   ipcUserAddVerified: "ipc_127",
-  ipcZZZNext: "ipc_177",
+  ipcZZZNext: "ipc_178",
 
   configFilename: "iipzy",
 
