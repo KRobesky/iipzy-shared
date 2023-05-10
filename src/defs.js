@@ -209,13 +209,15 @@ module.exports = {
   statusUserNotInWhiteList: 10030,
   statusIperf3ServerFailed: 10031,
 
+  // ping flag - bit mask
+  pingFlagNoop: 0,
+  pingFlagTcMode:1,
+
   // ping mark - bit mask
   pingMarkNormal: 0,
   pingMarkDropped: 1,
   pingMarkSavedRx: 2,
-  pingMarkTcMode:4,
-  pingMarkSavedTx: 8,
-  pingMarkLinkMask:251,
+  pingMarkSavedTx: 4,
 
   // -- events
   // objectType

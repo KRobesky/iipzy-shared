@@ -111,7 +111,7 @@ class Ping {
           tx_new_dropped : parseInt(0)
           */
           if (this.netrate) {
-            // consolidate ping and netrate
+            // consolidate ping and netrate.  NB: Sets .mark.
             let consolidatedSample = this.cur_ping_sample;       
             // NetRate or NetRateIPTables 
             consolidatedSample.rx_rate_bits = this.cur_netrate_result.rx_rate_bits;
@@ -134,10 +134,11 @@ class Ping {
             consolidatedSample.rx_bw_quality_bits	= this.cur_netrate_bandwidth_result.rx_bw_quality_bits;
             consolidatedSample.tx_bw_peak_bits		= this.cur_netrate_bandwidth_result.tx_bw_peak_bits;
             consolidatedSample.tx_bw_quality_bits	= this.cur_netrate_bandwidth_result.tx_bw_quality_bits;
-            // tcMode
+            // flag
+            consolidatedSample.flag = Defs.pingFlagTcNoop;
             if (this.tcMode)
-              consolidatedSample.mark |= Defs.pingMarkTcMode;
-            // NetRateTC
+              consolidatedSample.flag |= Defs.pingFlagTcMode;
+            // mark
             if (this.cur_netrate_saves_result.saved)
               consolidatedSample.mark |= this.cur_netrate_saves_result.saved;   
             else if (doSimulateSaves) 
