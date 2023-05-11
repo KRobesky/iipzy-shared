@@ -65,6 +65,8 @@ module.exports = {
   ipcConsoleLog: "ipc_009",
   ipcConsoleLogVerbose: "ipc_092",
   ipcDevicesReady: "ipc_075",
+  ipcDeviceWindowMount: "ipc_179",
+  ipcDeviceWindowUnmount: "ipc_180",
   ipcDeviceUpdated: "ipc_072",
   ipcDumpSentinelDeviceTable: "ipc_068",
   ipcExit: "ipc_010",
@@ -95,6 +97,7 @@ module.exports = {
   ipcPingPlotWindowButtonRightMarkedEx: "ipc_118",
   ipcPingPlotWindowButtonZoomChangeEx: "ipc_119",
   ipcPingPlotWindowMountEx: "ipc_120",
+  ipcPingPlotWindowUnmount: "ipc_178",
   ipcQuit: "ipc_067",
   ipcRendererReady: "ipc_033",
   ipcSentinelDiscoveryTryingSentinelIPAddress: "ipc_018",
@@ -120,7 +123,7 @@ module.exports = {
   ipcTickStatusNominalLatency: "ipc_042",
   ipcTimeOfTest: "ipc_043",
   ipcUserAddVerified: "ipc_127",
-  ipcZZZNext: "ipc_178",
+  ipcZZZNext: "ipc_181",
 
   configFilename: "iipzy",
 
