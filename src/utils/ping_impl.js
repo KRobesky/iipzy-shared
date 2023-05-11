@@ -57,7 +57,7 @@ class Ping {
     this.timeout = null;
     this.inSendPingSample = false;
     this.cur_ping_sample = {};
-    this.latestPingTime = 0;
+    this.latestPingTime = Date.now();
     this.dropCheckEnabled = false;
 
     // netrate
@@ -93,14 +93,19 @@ class Ping {
             "ping",
             "info"
           );
-          if (this.cur_ping_sample.timeMillis !== undefined) {
-            this.cur_ping_sample.timeStamp = new Date().toISOString();
-            if (this.dropCheckEnabled && now > this.latestPingTime + 10 * 1000) {
+
+          this.cur_ping_sample.timeStamp = new Date().toISOString();
+          if (this.dropCheckEnabled) {      
+            if (now > this.latestPingTime + 10 * 1000) {
               log("ping.sendPingSample: no new ping sample for 10 seconds", "ping", "info");
               this.cur_ping_sample.timeMillis = "0";
-              this.cur_ping_sample.status = Defs.pingStatusDropped;
-            }
+              this.cur_ping_sample.mark = Defs.pingMarkDropped;
+            } else if (this.cur_ping_sample.timeMillis === undefined) {
+              this.cur_ping_sample.timeMillis = "0";
+              this.cur_ping_sample.mark = Defs.pingMarkNormal;
+            }  
           }
+
           //log("ping.sendPingSample: cur_netrate_result = " + JSON.stringify(this.cur_netrate_result));
           /*
           rx_rate_bits : parseInt(0),
