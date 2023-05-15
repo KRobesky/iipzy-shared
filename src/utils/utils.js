@@ -1,4 +1,5 @@
 const { log } = require("./logFile");
+const { fileExistsAsync, fileStatAsync } = require("./fileIO");
 
 async function getServiceSuffixes(service) {
   log("getServiceSuffixes: service = " + service, "util", "info");
