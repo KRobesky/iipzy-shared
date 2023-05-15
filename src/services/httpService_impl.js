@@ -6,6 +6,7 @@ const https = require("https");
 const Defs = require("../defs");
 const { fileStatAsync } = require("../utils/fileIO");
 const { log } = require("../utils/logFile");
+const { sleep } = require("../utils/utils");
 
 const httpsInstance = axios.create({
   httpsAgent: new https.Agent({
@@ -18,7 +19,7 @@ const httpsInstance = axios.create({
   }
 });
 
-function handleHttpException(title, ex) {
+async function handleHttpException(title, ex) {
   log(
     "(Exception) " + title + ": " + ex + ", code = " + ex.code,
     "http",
@@ -40,6 +41,8 @@ function handleHttpException(title, ex) {
     }
   }
 
+  await sleep(2*1000);
+
   return { status };
 }
 
@@ -48,7 +51,7 @@ async function _delete(url, config) {
   try {
     return await httpsInstance.delete(url, config);
   } catch (ex) {
-    return handleHttpException("delete", ex);
+    return await handleHttpException("delete", ex);
   }
 }
 
@@ -57,7 +60,7 @@ async function _get(url, config) {
   try {
     return await httpsInstance.get(url, config);
   } catch (ex) {
-    return handleHttpException("get", ex);
+    return await handleHttpException("get", ex);
   }
 }
 
@@ -66,7 +69,7 @@ async function _post(url, params, config) {
   try {
     return await httpsInstance.post(url, params, config);
   } catch (ex) {
-    return handleHttpException("post", ex);
+    return await handleHttpException("post", ex);
   }
 }
 
@@ -75,7 +78,7 @@ async function _put(url, params, config) {
   try {
     return await httpsInstance.put(url, params, config);
   } catch (ex) {
-    return handleHttpException("put", ex);
+    return await handleHttpException("put", ex);
   }
 }
 
@@ -103,7 +106,7 @@ async function fileDownload(url, filename) {
       writer.on("error", reject);
     });
   } catch (ex) {
-    return handleHttpException("fileDownload", ex);
+    return await handleHttpException("fileDownload", ex);
   }
 }
 
@@ -126,7 +129,7 @@ async function fileUpload(filename) {
       }
     );
   } catch (ex) {
-    return handleHttpException("fileUpload", ex);
+    return await handleHttpException("fileUpload", ex);
   }
 }
 
