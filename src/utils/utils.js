@@ -1,7 +1,30 @@
 const { log } = require("./logFile");
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+async function getServiceSuffixes(service) {
+  log("getServiceSuffixes: service = " + service, "util", "info");
+
+  const baseDir = "/home/pi/" + service + "-";
+  // e.g.: /home/pi/iipzy-sentinel-admin-",
+  log("getServiceSuffixes: baseDir = " + baseDir, "util", "info");
+  let stat_a_timestampEpoch = 0;
+  let stat_b_timestampEpoch = 0;
+  if (await fileExistsAsync(baseDir + "a")) {
+    const stat_a = await fileStatAsync(baseDir + "a");
+    log("getServiceSuffixes - stat_a: " + JSON.stringify(stat_a, null, 2), "util", "info");
+    stat_a_timestampEpoch = stat_a.birthtimeMs;
+  }
+  if (await fileExistsAsync(baseDir + "b")) {
+    const stat_b = await fileStatAsync(baseDir + "b");
+    log("getServiceSuffixes - stat_b: " + JSON.stringify(stat_b, null, 2), "util", "info");
+    stat_b_timestampEpoch = stat_b.birthtimeMs;
+  }
+  log("getServiceSuffixes: a_ts = " + stat_a_timestampEpoch + ", b_ts = " + stat_b_timestampEpoch, "util", "info");
+  return {
+    // NB: cur is newest.
+    curServiceSuffix : (stat_a_timestampEpoch > stat_b_timestampEpoch) ? "a" : "b",
+    // NB: next is oldest.
+    nextServiceSuffix : (stat_a_timestampEpoch > stat_b_timestampEpoch) ? "b" : "a"
+  }
 }
 
 async function processErrorHandler(processStopHandler, processAlertHandler) {
@@ -63,4 +86,8 @@ async function processErrorHandler(processStopHandler, processAlertHandler) {
   log("<<<processErrorHandler", "perr", "info");
 }
 
-module.exports = { processErrorHandler, sleep };
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+module.exports = { getServiceSuffixes, processErrorHandler, sleep };
