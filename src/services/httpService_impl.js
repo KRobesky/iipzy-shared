@@ -25,7 +25,7 @@ async function handleHttpException(title, ex) {
     "http",
     "error"
   );
-  log("stack: " + ex.stack, "http", "info");
+  //log("stack: " + ex.stack, "http", "info");
   let status = Defs.httpStatusException;
   switch (ex.code) {
     case "ECONNREFUSED": {
