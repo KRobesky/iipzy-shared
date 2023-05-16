@@ -147,7 +147,7 @@ function parseFree(free) {
   //log("collectPeriodicData: free = " + free);
   //            total          used        free      shared  buff/cache   available
   //Mem:        3928784     3635720      186172       27540      106892      217036
-  const rows = vmstat.split("\n");
+  const rows = free.split("\n");
   const fields = rows[2].match(/\S+/g);
   let ret = {};
   ret.total = parseInt(fields[1]);
