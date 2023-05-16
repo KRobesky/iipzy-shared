@@ -9,9 +9,9 @@ function parseUptime(uptime) {
 
 function parseTemp(temp) {
   //log("collectPeriodicData: temp = " + temp);
-  // temp=63.0'C
-  const r = temp.indexOf("'");
-  return r !== -1 ? (parseFloat(temp.substring(5, r)) * 9) / 5 + 32 : 0.0;
+  // temp=41234 = 41.234 C
+  const temp_celsius = parseFloat((parseInt(temp)/1000).toFixed(1));
+  return (parseFloat(temp_celsius) * 9) / 5 + 32;
 }
 
 function parseDf(df) {
@@ -138,7 +138,6 @@ function parseVmstat(vmstat) {
   return ret;
 }
 
-let isRaspberryPi = false;
 let firstTime = true;
 
 async function collectPeriodicData() {
@@ -152,9 +151,6 @@ async function collectPeriodicData() {
 
   const rows = iostat.split("\n");
   const machineInfo = firstTime ? parseIostatMachineInfo(rows) : undefined;
-  if (machineInfo && machineInfo.linux) {
-    isRaspberryPi = machineInfo.linux.indexOf("raspberrypi") !== -1;
-  }
   const cpuInfo = parseIostatCPUInfo(rows);
   const deviceInfo = parseIostatDeviceInfo(rows);
 
@@ -165,12 +161,10 @@ async function collectPeriodicData() {
   } else bootTime = undefined;
 
   let degreesFahrenheit = null;
-  if (isRaspberryPi) {
-    const { stdout } = await spawnAsync("/opt/vc/bin/vcgencmd", [
-      "measure_temp"
-    ]);
+  {      
+    const { stdout } = await spawnAsync("cat", ["/sys/devices/virtual/thermal/thermal_zone0/temp"]);
     degreesFahrenheit = parseTemp(stdout);
-  }
+  } 
 
   let storage = null;
   {
@@ -186,9 +180,7 @@ async function collectPeriodicData() {
 
   firstTime = false;
 
-  log("<<<collectPeriodicData", "perd", "info");
-
-  return {
+  const ret = {
     time: now(),
     bootTime,
     degreesFahrenheit,
@@ -198,6 +190,10 @@ async function collectPeriodicData() {
     deviceInfo,
     memoryInfo
   };
+
+  log("<<<collectPeriodicData: " + JSON.stringify(ret, null, 2), "perd", "info");
+
+  return ret;
 }
 
 module.exports = { collectPeriodicData };
