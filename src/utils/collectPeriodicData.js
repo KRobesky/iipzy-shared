@@ -125,6 +125,7 @@ function parseIostatDeviceInfo(rows) {
   return ret;
 }
 
+/*
 function parseVmstat(vmstat) {
   //log("collectPeriodicData: vmstat = " + vmstat);
   //   procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
@@ -138,6 +139,23 @@ function parseVmstat(vmstat) {
   ret.free = parseInt(fields[3]);
   ret.buff = parseInt(fields[4]);
   ret.cache = parseInt(fields[5]);
+  return ret;
+}
+*/
+
+function parseFree(free) {
+  //log("collectPeriodicData: free = " + free);
+  //            total          used        free      shared  buff/cache   available
+  //Mem:        3928784     3635720      186172       27540      106892      217036
+  const rows = vmstat.split("\n");
+  const fields = rows[2].match(/\S+/g);
+  let ret = {};
+  ret.total = parseInt(fields[1]);
+  ret.used = parseInt(fields[2]);
+  ret.free = parseInt(fields[3]);
+  ret.shared = parseInt(fields[4]);
+  ret.cache = parseInt(fields[5]);
+  ret.available = parseInt(fields[6]);
   return ret;
 }
 
@@ -177,8 +195,8 @@ async function collectPeriodicData() {
 
   let memoryInfo = null;
   {
-    const { stdout } = await spawnAsync("vmstat", []);
-    memoryInfo = parseVmstat(stdout);
+    const { stdout } = await spawnAsync("free", []);
+    memoryInfo = parseFree(stdout);
   }
 
   firstTime = false;
