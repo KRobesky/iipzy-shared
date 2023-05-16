@@ -156,6 +156,7 @@ class Ping {
             consolidatedSample.cpu_utlz_iowait = this.cur_cpumon_result.cpu_utlz_iowait;
             consolidatedSample.cpu_utlz_steal  = this.cur_cpumon_result.cpu_utlz_steal;
             consolidatedSample.cpu_utlz_idle   = this.cur_cpumon_result.cpu_utlz_idle;  
+            consolidatedSample.mem_use_pct     = this.cur_cpumon_result.mem_use_pct;  
             //log("ping.sendPingSample: consolidatedSample" + JSON.stringify(consolidatedSample, null, 2), "ping", "error");
             this.dataFunc(consolidatedSample);
           } else {
