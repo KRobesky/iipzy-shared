@@ -8,10 +8,13 @@ function parseUptime(uptime) {
 }
 
 function parseTemp(temp) {
-  //log("collectPeriodicData: temp = " + temp);
+  log("collectPeriodicData.parseTemp: temp = " + temp);
   // temp=41234 = 41.234 C
   const temp_celsius = parseFloat((parseInt(temp)/1000).toFixed(1));
-  return (parseFloat(temp_celsius) * 9) / 5 + 32;
+  log("collectPeriodicData.parseTemp: temp_celsius = " + temp_celsius);
+  const temp_fahrenheit = (temp_celsius * 9) / 5 + 32;
+  log("collectPeriodicData.parseTemp: temp_fahrenheit = " + temp_fahrenheit);
+  return temp_fahrenheit;
 }
 
 function parseDf(df) {
