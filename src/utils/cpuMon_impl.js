@@ -60,7 +60,7 @@ class CpuMon {
 
     try {  
       // cpu utilization
-      const { stdout, strerr } = await spawnAsync("iostat", ["-y", "-c"]);
+      const { stdout, stderr } = await spawnAsync("iostat", ["-y", "-c"]);
       if (stderr) {
         log("(Error) CpuMon.getCpuData - utlz: " + stderr, "cpum", "error");
       } else {
