@@ -10,6 +10,8 @@ class CpuMon {
     this.dataFunc = dataFunc;
 
     this.interval = null;
+
+    this.prev_sample = this.initSample();
   }
 
   initSample() {
@@ -48,6 +50,10 @@ class CpuMon {
         log("(Error) CpuMon.getCpuData - temp: " + stderr, "cpum", "error");
       } else {
         sample.temp_celsius = parseFloat((parseInt(stdout)/1000).toFixed(1));
+        if (sample.temp_celsius > 0)
+          this.prev_sample.temp_celsius = sample.temp_celsius;
+        else
+          sample.temp_celsius = this.prev_sample.temp_celsius;
       }
     } catch (ex) {
       log("(Exception) CpuMon.getCpuData - temp: " + ex, "cpum", "error"); 
@@ -69,6 +75,10 @@ class CpuMon {
                               parseFloat(parts[4]) + // iowait
                               parseFloat(parts[5]);  // steal
         sample.cpu_utlz_pct = cpu_utlz_pct.toFixed(1);
+        if (sample.cpu_utlz_pct > 0)
+          this.prev_sample.cpu_utlz_pct = sample.cpu_utlz_pct;
+        else
+          sample.cpu_utlz_pct = this.prev_sample.cpu_utlz_pct;
       }
     } catch (ex) {
       log("(Exception) CpuMon.getCpuData - cpu_utlz: " + ex, "cpum", "error"); 
@@ -87,6 +97,10 @@ class CpuMon {
         let total = parseInt(fields[1]);
         let used = parseInt(fields[2]);
         sample.mem_use_pct = ((used / total) * 100).toFixed(1);
+        if (sample.mem_use_pct > 0)
+          this.prev_sample.mem_use_pct = sample.mem_use_pct;
+        else
+          sample.mem_use_pct = this.prev_sample.mem_use_pct;
       }   
     } catch (ex) {
       log("(Exception) CpuMon.getCpuData - free: " + ex, "cpum", "error");      
@@ -109,6 +123,10 @@ class CpuMon {
         let total = parseInt(fields[1]);
         let used = parseInt(fields[2]);
         sample.stg_use_pct = ((used / total) * 100).toFixed(1);
+        if (sample.stg_use_pct > 0)
+        this.prev_sample.stg_use_pct = sample.stg_use_pct;
+      else
+        sample.stg_use_pct = this.prev_sample.stg_use_pct;
       }   
     } catch (ex) {
       log("(Exception) CpuMon.getCpuData - free: " + ex, "cpum", "error");      
