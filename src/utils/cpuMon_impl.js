@@ -88,7 +88,7 @@ class CpuMon {
       // memory
       const { stdout, stderr } = await spawnAsync("free", []);
       if (stderr) {
-        log("(Error) CpuMon.getCpuData - utlz: " + stderr, "cpum", "error");
+        log("(Error) CpuMon.getCpuData - free: " + stderr, "cpum", "error");
       } else if (stdout) {
         //            total          used        free      shared  buff/cache   available
         //Mem:        3928784     3635720      186172       27540      106892      217036
@@ -97,10 +97,13 @@ class CpuMon {
         let total = parseInt(fields[1]);
         let used = parseInt(fields[2]);
         sample.mem_use_pct = ((used / total) * 100).toFixed(1);
-        if (sample.mem_use_pct > 0)
+        if (sample.mem_use_pct > 0) {
+          log("CpuMon.getCpuData - free - saving cur: " + sample.mem_use_pct, "cpum", "info");
           this.prev_sample.mem_use_pct = sample.mem_use_pct;
-        else
+        } else {
+          log("CpuMon.getCpuData - free - using prev: " + this.prev_sample.mem_use_pct, "cpum", "info");
           sample.mem_use_pct = this.prev_sample.mem_use_pct;
+        }
       }   
     } catch (ex) {
       log("(Exception) CpuMon.getCpuData - free: " + ex, "cpum", "error");      
@@ -129,7 +132,7 @@ class CpuMon {
         sample.stg_use_pct = this.prev_sample.stg_use_pct;
       }   
     } catch (ex) {
-      log("(Exception) CpuMon.getCpuData - free: " + ex, "cpum", "error");      
+      log("(Exception) CpuMon.getCpuData - df: " + ex, "cpum", "error");      
     }
 
     log("CpuMon.getCpuData:" + JSON.stringify(sample), "cpum", "info");
