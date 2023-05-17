@@ -149,14 +149,10 @@ class Ping {
             else if (doSimulateSaves) 
               consolidatedSample.mark |= Defs.pingMarkSavedRx;
             // CpuMon
-            consolidatedSample.temp_celsius    = this.cur_cpumon_result.temp_celsius;
-            consolidatedSample.cpu_utlz_user   = this.cur_cpumon_result.cpu_utlz_user;  
-            consolidatedSample.cpu_utlz_nice   = this.cur_cpumon_result.cpu_utlz_nice;  
-            consolidatedSample.cpu_utlz_system = this.cur_cpumon_result.cpu_utlz_system;
-            consolidatedSample.cpu_utlz_iowait = this.cur_cpumon_result.cpu_utlz_iowait;
-            consolidatedSample.cpu_utlz_steal  = this.cur_cpumon_result.cpu_utlz_steal;
-            consolidatedSample.cpu_utlz_idle   = this.cur_cpumon_result.cpu_utlz_idle;  
-            consolidatedSample.mem_use_pct     = this.cur_cpumon_result.mem_use_pct;  
+            consolidatedSample.temp_celsius = this.cur_cpumon_result.temp_celsius;
+            consolidatedSample.cpu_utlz_pct = this.cur_cpumon_result.cpu_utlz_pct;  
+            consolidatedSample.mem_use_pct  = this.cur_cpumon_result.mem_use_pct;  
+            consolidatedSample.stg_use_pct  = this.cur_cpumon_result.stg_use_pct;
             //log("ping.sendPingSample: consolidatedSample" + JSON.stringify(consolidatedSample, null, 2), "ping", "error");
             this.dataFunc(consolidatedSample);
           } else {

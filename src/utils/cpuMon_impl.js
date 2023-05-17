@@ -22,7 +22,8 @@ class CpuMon {
       cpu_utlz_iowait : parseFloat(0),
       cpu_utlz_steal  : parseFloat(0),
       cpu_utlz_idle   : parseFloat(0),
-      mem_use_pct     : parseFloat(0)
+      mem_use_pct     : parseFloat(0),
+      stg_use_pct     : parseFloat(0)
     }
   }
     
@@ -44,6 +45,7 @@ class CpuMon {
     log("CpuMon.getCpuData", "cpum", "info");
 
     let sample = this.initSample();
+ 
     try {
       // temp
       const { stdout, stderr } = await spawnAsync("cat", ["/sys/devices/virtual/thermal/thermal_zone0/temp"]);
@@ -52,42 +54,70 @@ class CpuMon {
       } else {
         sample.temp_celsius = parseFloat((parseInt(stdout)/1000).toFixed(1));
       }
+    } catch (ex) {
+      log("(Exception) CpuMon.getCpuData - temp: " + ex, "cpum", "error"); 
+    }
 
-      {
-        // cpu utilization
-        const { stdout, strerr } = await spawnAsync("iostat", ["-y", "-c"]);
-        if (stderr) {
-          log("(Error) CpuMon.getCpuData - utlz: " + stderr, "cpum", "error");
-        } else {
-          //log("CpuMon.getCpuData: utilization = " + stdout);
-          const lines = stdout.split('\n');
-          const line = lines[3];
-          const parts = line.replace(/\s\s+/g, ' ').split(' ');
-          sample.cpu_utlz_user    = parseFloat(parts[1]);
-          sample.cpu_utlz_nice    = parseFloat(parts[2]);
-          sample.cpu_utlz_system  = parseFloat(parts[3]);
-          sample.cpu_utlz_iowait  = parseFloat(parts[4]);
-          sample.cpu_utlz_steal   = parseFloat(parts[5]);
-          sample.cpu_utlz_idle    = parseFloat(parts[6]);
-        }
-      }
-      {
-        // memory
-        const { stdout, stderr } = await spawnAsync("free", []);
-        if (stderr) {
-          log("(Error) CpuMon.getCpuData - utlz: " + stderr, "cpum", "error");
-        } else if (stdout) {
-          //            total          used        free      shared  buff/cache   available
-          //Mem:        3928784     3635720      186172       27540      106892      217036
-          const rows = stdout.split("\n");
-          const fields = rows[1].match(/\S+/g);
-          let total = parseInt(fields[1]);
-          let used = parseInt(fields[2]);
-          sample.mem_use_pct = ((used / total) * 100).toFixed(1);
-        }
+    try {  
+      // cpu utilization
+      const { stdout, strerr } = await spawnAsync("iostat", ["-y", "-c"]);
+      if (stderr) {
+        log("(Error) CpuMon.getCpuData - utlz: " + stderr, "cpum", "error");
+      } else {
+        //log("CpuMon.getCpuData: utilization = " + stdout);
+        const lines = stdout.split('\n');
+        const line = lines[3];
+        const parts = line.replace(/\s\s+/g, ' ').split(' ');
+        jod.cpu_utlz_user + jod.cpu_utlz_nice + jod.cpu_utlz_system + jod.cpu_utlz_iowait + jod.cpu_utlz_steal
+        const cpu_utlz_pct =  parseFloat(parts[1]) + // user
+                              parseFloat(parts[2]) + // nice
+                              parseFloat(parts[3]) + //system
+                              parseFloat(parts[4]) + // iowait
+                              parseFloat(parts[5]);  // steal
+        sample.cpu_utlz_pct = cpu_utlz_pct.toFixed(1);
       }
     } catch (ex) {
-      log("(Exception) CpuMon.getCpuData: " + ex, "cpum", "error");      
+      log("(Exception) CpuMon.getCpuData - cpu_utlz: " + ex, "cpum", "error"); 
+    }
+
+    try {
+      // memory
+      const { stdout, stderr } = await spawnAsync("free", []);
+      if (stderr) {
+        log("(Error) CpuMon.getCpuData - utlz: " + stderr, "cpum", "error");
+      } else if (stdout) {
+        //            total          used        free      shared  buff/cache   available
+        //Mem:        3928784     3635720      186172       27540      106892      217036
+        const rows = stdout.split("\n");
+        const fields = rows[1].match(/\S+/g);
+        let total = parseInt(fields[1]);
+        let used = parseInt(fields[2]);
+        sample.mem_use_pct = ((used / total) * 100).toFixed(1);
+      }   
+    } catch (ex) {
+      log("(Exception) CpuMon.getCpuData - free: " + ex, "cpum", "error");      
+    }
+
+    try {
+      // storage
+      const { stdout, stderr } = await spawnAsync("df", []);
+      if (stderr) {
+        log("(Error) CpuMon.getCpuData - df: " + stderr, "cpum", "error");
+      } else if (stdout) {       
+        //  Filesystem     1K-blocks    Used Available Use% Mounted on
+        //  tmpfs                512       0       512   0% /dev
+        //  tmpfs             392880     176    392704   1% /run
+        //  overlay          6973304 4038328   2918592  59% /
+        //  tmpfs            1964392   22356   1942036   2% /tmp
+        //  cgroup           1964392       0   1964392   0% /sys/fs/cgroup
+        const rows = stdout.split("\n");
+        const fields = rows[3].match(/\S+/g);
+        let total = parseInt(fields[1]);
+        let used = parseInt(fields[2]);
+        sample.stg_use_pct = ((used / total) * 100).toFixed(1);
+      }   
+    } catch (ex) {
+      log("(Exception) CpuMon.getCpuData - free: " + ex, "cpum", "error");      
     }
 
     log("CpuMon.getCpuData:" + JSON.stringify(sample), "cpum", "info");
