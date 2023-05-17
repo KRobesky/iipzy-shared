@@ -16,12 +16,7 @@ class CpuMon {
     return {
       sample_time     : Date.now(),
       temp_celsius    : parseFloat(0),
-      cpu_utlz_user   : parseFloat(0),
-      cpu_utlz_nice   : parseFloat(0),
-      cpu_utlz_system : parseFloat(0),
-      cpu_utlz_iowait : parseFloat(0),
-      cpu_utlz_steal  : parseFloat(0),
-      cpu_utlz_idle   : parseFloat(0),
+      cpu_utlz_pct    : parseFloat(0),
       mem_use_pct     : parseFloat(0),
       stg_use_pct     : parseFloat(0)
     }
@@ -70,7 +65,7 @@ class CpuMon {
         const parts = line.replace(/\s\s+/g, ' ').split(' ');
         const cpu_utlz_pct =  parseFloat(parts[1]) + // user
                               parseFloat(parts[2]) + // nice
-                              parseFloat(parts[3]) + //system
+                              parseFloat(parts[3]) + // system
                               parseFloat(parts[4]) + // iowait
                               parseFloat(parts[5]);  // steal
         sample.cpu_utlz_pct = cpu_utlz_pct.toFixed(1);
