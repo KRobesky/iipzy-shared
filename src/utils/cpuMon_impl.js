@@ -68,7 +68,6 @@ class CpuMon {
         const lines = stdout.split('\n');
         const line = lines[3];
         const parts = line.replace(/\s\s+/g, ' ').split(' ');
-        jod.cpu_utlz_user + jod.cpu_utlz_nice + jod.cpu_utlz_system + jod.cpu_utlz_iowait + jod.cpu_utlz_steal
         const cpu_utlz_pct =  parseFloat(parts[1]) + // user
                               parseFloat(parts[2]) + // nice
                               parseFloat(parts[3]) + //system
