@@ -67,7 +67,7 @@ async function getPublicIp(http) {
 
 // NB: assumes ipv4
 function sameSubnet(ipAddress1, ipAddress2) {
-  log("sameSubnet: ipAddress1 = " + ipAddress1 + ", ipAddress2 = " + ipAddress2, "neti", "error");
+  log("sameSubnet: ipAddress1 = " + ipAddress1 + ", ipAddress2 = " + ipAddress2, "neti", "info");
   const ip1 = ipAddress1.split('.');
   const ip2 = ipAddress2.split('.');
   for (let i = 0; i < ip1.length - 1; i++) {
