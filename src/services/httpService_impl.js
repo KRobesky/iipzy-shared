@@ -160,7 +160,10 @@ function getBaseURL() {
 }
 
 function setBaseURL(baseURL) {
-  axios.defaults.baseURL = "https://" + baseURL + "/api";
+  if (baseURL.startsWith("localhost"))
+    axios.defaults.baseURL = "http://" + baseURL + "/api";
+  else
+    axios.defaults.baseURL = "https://" + baseURL + "/api";
   log("setBaseURL = " + axios.defaults.baseURL, "http", "info");
 }
 
